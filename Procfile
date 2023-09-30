@@ -1,1 +1,1 @@
-worker: bmap-idx
+worker: go-bmap-indexer
