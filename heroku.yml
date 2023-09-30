@@ -5,4 +5,4 @@ build:
     - go
 
 run:
-  worker: go-bmap-indexer
+  worker: bmap-idx
