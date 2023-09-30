@@ -1,1 +1,1 @@
-worker: go-bmap-indexer
+worker: go run main.go
