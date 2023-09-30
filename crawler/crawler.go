@@ -130,6 +130,14 @@ func Crawl(height int) (newHeight int) {
 			case "status":
 				if event.Status.Status == "block-done" {
 					wg.Wait()
+
+					if event.Status.StatusCode == 200 && event.Status.Block == 0 {
+						fmt.Printf("Crawler Reset!!!!")
+						fmt.Println("Unsubscribing and exiting...")
+						subscription.Unsubscribe()
+						os.Exit(0)
+					}
+
 					processBlockDoneEvent(event.Status, height)
 				}
 			case "mempool":
