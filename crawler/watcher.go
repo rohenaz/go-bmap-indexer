@@ -15,7 +15,17 @@ func WatchFiles(readyFiles chan string) {
 	}
 	defer watcher.Close()
 
+	// Check if "data" directory exists
+	if _, err := os.Stat("data"); os.IsNotExist(err) {
+		// Create the directory if it doesn't exist
+		err := os.Mkdir("data", 0755)
+		if err != nil {
+			log.Fatal("Error creating data directory:", err)
+		}
+	}
+
 	// Start watching the data directory
+	log.Println("Watching data folder...")
 	err = watcher.Add("data")
 	if err != nil {
 		log.Fatal(err)
