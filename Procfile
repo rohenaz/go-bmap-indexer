@@ -1,1 +1,1 @@
-worker: bmap-idx
+worker: worker
