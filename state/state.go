@@ -37,6 +37,10 @@ func LoadProgress() (height uint32) {
 		if err := persist.Load("./block.tmp", &height); err != nil {
 			log.Println(err, "Starting from default block.")
 			height = config.FromBlock
+			// Create the file if it doesn't exist
+			if err := persist.Save("./block.tmp", height); err != nil {
+				log.Println("Error creating block.tmp:", err)
+			}
 		}
 	}
 
