@@ -1,5 +1,6 @@
 FROM heroku/heroku:20-build as build
-
+RUN mkdir -p ./data
+RUN touch ./block.tmp
 COPY . /app
 WORKDIR /app
 
