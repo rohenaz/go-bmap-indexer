@@ -18,10 +18,13 @@ import (
 	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/rohenaz/go-bmap-indexer/persist"
 	"github.com/rohenaz/go-bmap-indexer/state"
+	"github.com/ttacon/chalk"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-var wg sync.WaitGroup
+var wgs map[uint32]*sync.WaitGroup
+var cancelChannel chan int
+var eventChannel chan Event
 
 func SyncBlocks(height int) (newBlock int) {
 	// Setup crawl timer
@@ -34,8 +37,18 @@ func SyncBlocks(height int) (newBlock int) {
 	diff := time.Since(crawlStart).Seconds()
 
 	// TODO: I believe if we get here crawl has actually died
-	fmt.Printf("Bitbus sync complete in %fs\nBlock height: %d\n", diff, height)
+	fmt.Printf("Junglebus closed after %fs\nBlock height: %d\n", diff, height)
 	return
+}
+
+type BlockState struct {
+	Height  int
+	Retries int
+}
+
+type CrawlState struct {
+	Height int
+	Blocks []BlockState
 }
 
 type Event struct {
@@ -45,10 +58,19 @@ type Event struct {
 	Error       error
 }
 
+func init() {
+	// TODO: Is this needed?
+	wgs = make(map[uint32]*sync.WaitGroup)
+	cancelChannel = make(chan int)
+	eventChannel = make(chan Event, 1000) // Buffered channel
+}
+
 // Crawl loops over the new bmap transactions since the given block height
 func Crawl(height int) (newHeight int) {
 
-	eventChannel := make(chan Event, 1000) // Buffered channel
+	// make the first waitgroup for the initial block
+	// hereafter we will add these in block done event
+	wgs[uint32(height)] = &sync.WaitGroup{}
 
 	junglebusClient, err := junglebus.New(
 		junglebus.WithHTTP("https://junglebus.gorillapool.io"),
@@ -63,6 +85,7 @@ func Crawl(height int) (newHeight int) {
 	fromBlock := uint64(config.FromBlock)
 
 	lastBlock := uint64(state.LoadProgress())
+
 	if lastBlock > fromBlock {
 		fromBlock = lastBlock
 	}
@@ -116,61 +139,41 @@ func Crawl(height int) (newHeight int) {
 		}
 	}
 
-	go func() {
-		for event := range eventChannel {
-			switch event.Type {
-			case "transaction":
-				if event.Transaction != nil {
-					wg.Add(1)
-					processTransactionEvent(event.Transaction)
-					wg.Done()
-				} else {
-					log.Printf("ERROR: Transaction is nil!!")
-				}
-			case "status":
-				if event.Status.Status == "block-done" {
-					wg.Wait()
-
-					if event.Status.StatusCode == 200 && event.Status.Block == 0 {
-						fmt.Printf("Crawler Reset!!!!")
-						fmt.Println("Unsubscribing and exiting...")
-						subscription.Unsubscribe()
-						os.Exit(0)
-					}
-
-					processBlockDoneEvent(event.Status, height)
-				}
-			case "mempool":
-				processMempoolEvent(event.Transaction)
-			case "error":
-				log.Printf("ERROR: %s", event.Error.Error())
-			}
-		}
-	}()
-
 	// wait indefinitely to make sure we dont stop
 	// before more mempool txs come in
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wg.Wait()
+	go eventListener(height, subscription)
 
-	// Print tx line to stdout
-	if err != nil {
-		fmt.Println(err)
+	// listen for cancel message
+	for newHeight := range cancelChannel {
+		log.Printf("%s[INFO]: Canceling crawl at block %d%s\n", chalk.Yellow, newHeight, chalk.Reset)
+		//close(eventChannel)
+		subscription.Unsubscribe()
+		state.SaveProgress(uint32(newHeight))
+		return newHeight
 	}
 
+	// have a channel here listen for the stop signal, decrement the waitgroup
+	// and return the new block height to resubscribe from
+
+	// Print tx line to stdout
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
 	return
+}
+
+func CancelCrawl(newBlockHeight int) {
+	log.Printf("%s[INFO]: Canceling crawl at block %d%s\n", chalk.Yellow, newBlockHeight, chalk.Reset)
+	cancelChannel <- newBlockHeight
 }
 
 func processTransactionEvent(tx *models.TransactionResponse) {
 	if tx != nil && tx.Id != "" {
 
 		if len(tx.Transaction) != 0 {
-			// log.Println("Processing txb...")
 			// Write to disk
-
 			if len(tx.Transaction) > 0 {
-
 				t, err := bt.NewTxFromBytes(tx.Transaction)
 				if err != nil {
 					log.Printf("[ERROR]: %v", err)
@@ -188,14 +191,8 @@ func processTransactionEvent(tx *models.TransactionResponse) {
 				log.Printf("[BMAP]: %d: %s | Data Length: %d | First 10 bytes: %x", tx.BlockHeight, bmapTx.Tx.Tx.H, len(tx.Transaction), tx.Transaction[:10])
 
 				processTx(bmapTx)
-			} else {
-				log.Printf("ERROR: Transaction is nil 3!!")
 			}
-		} else {
-			log.Printf("ERROR: Transaction is nil 2!!")
 		}
-	} else {
-		log.Printf("ERROR: Transaction is nil 4!!")
 	}
 }
 
@@ -215,14 +212,14 @@ func processMempoolEvent(tx *models.TransactionResponse) {
 }
 
 func processBlockDoneEvent(status *models.ControlResponse, height int) {
-	// status = "block-done"
-	log.Printf("[STATUS]: %v, %d", status, height)
-	filename := fmt.Sprintf("data/%d.json", status.Block)
+	log.Printf("[BLOCK DONE]: %v, %d", status, height)
 
 	if int(status.Block) > height {
 		height = int(status.Block)
 		state.SaveProgress(uint32(height))
 	}
+
+	filename := fmt.Sprintf("data/%d.json", status.Block)
 
 	// check if the file exists at path
 	if _, err := os.Stat(filename); os.IsNotExist(err) {

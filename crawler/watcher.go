@@ -1,17 +1,19 @@
 package crawler
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/ttacon/chalk"
 )
 
 // WatchFiles for changes in the data directory
 func WatchFiles(readyFiles chan string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("%s%s%s%s\n", chalk.Red, "Error: ", err, chalk.Reset)
+		return
 	}
 	defer watcher.Close()
 
@@ -20,15 +22,18 @@ func WatchFiles(readyFiles chan string) {
 		// Create the directory if it doesn't exist
 		err := os.Mkdir("data", 0755)
 		if err != nil {
-			log.Fatal("Error creating data directory:", err)
+			fmt.Printf("%s%s%s%s\n", chalk.Red, "Error creating data directory:", err, chalk.Reset)
+			return
 		}
 	}
 
 	// Start watching the data directory
-	log.Println("Watching data folder...")
+	fmt.Println(chalk.Red, "Watching data folder...", chalk.Reset)
+
 	err = watcher.Add("data")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("%s%s%s%s\n", chalk.Red, "Error: ", err, chalk.Reset)
+		return
 	}
 
 	for {
@@ -38,7 +43,7 @@ func WatchFiles(readyFiles chan string) {
 			if event.Op&fsnotify.Chmod == fsnotify.Chmod {
 				fileInfo, err := os.Stat(event.Name)
 				if err != nil {
-					log.Printf("Error stating file %s: %v", event.Name, err)
+					fmt.Printf("%s%s%s: %v%s\n", chalk.Red, "Error getting file stats", event.Name, err, chalk.Reset)
 					continue
 				}
 
@@ -48,7 +53,8 @@ func WatchFiles(readyFiles chan string) {
 				}
 			}
 		case err := <-watcher.Errors:
-			log.Println("Watcher error:", err)
+			fmt.Printf("%s%s%s%s\n", chalk.Red, "Watcher error:", err, chalk.Reset)
+			return
 		}
 	}
 }

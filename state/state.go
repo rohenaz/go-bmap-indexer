@@ -7,21 +7,22 @@ import (
 
 	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/rohenaz/go-bmap-indexer/database"
-	"github.com/rohenaz/go-bmap-indexer/persist"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // SaveProgress persists the block height to ./block.tmp
 func SaveProgress(height uint32) {
 	if height > 0 {
-		if config.UseDBForState {
-			// persist our progress to the database
-			// TODO save height to _state collection
-			// { _id: 'height', value: height }
-		} else {
-			// persist our progress to disk
-			if err := persist.Save("./block.tmp", height); err != nil {
-				log.Fatalln(err)
-			}
+
+		// persist our progress to the database
+		// TODO save height to _state collection
+		// { _id: 'height', value: height }
+		conn := database.GetConnection()
+
+		_, err := conn.UpsertOne("_state", bson.M{"_id": "_state"}, bson.M{"height": height})
+		if err != nil {
+			log.Printf("[ERROR]: %v", err)
+			return
 		}
 	}
 
@@ -29,20 +30,29 @@ func SaveProgress(height uint32) {
 
 // LoadProgress loads the block height from ./block.tmp
 func LoadProgress() (height uint32) {
-	if config.UseDBForState {
-		// TODO: load height from _state collection
-		// { _id: 'height', value: height }
-	} else {
-		// load height from disk
-		if err := persist.Load("./block.tmp", &height); err != nil {
-			log.Println(err, "Starting from default block.")
-			height = config.FromBlock
-			// Create the file if it doesn't exist
-			if err := persist.Save("./block.tmp", height); err != nil {
-				log.Println("Error creating block.tmp:", err)
-			}
-		}
+
+	// load height from _state collection
+
+	conn := database.GetConnection()
+
+	doc, err := conn.GetStateDocs("_state", 1, 0, bson.M{"_id": "_state"})
+	if err != nil {
+		log.Printf("[ERROR]: %v", err)
+		return
 	}
+
+	if len(doc) == 0 {
+		log.Printf("[ERROR]: No state found")
+
+		// create initial state document
+		conn.UpsertOne("_state", bson.M{"_id": "_state"}, bson.M{"height": uint32(config.FromBlock)})
+
+		height = config.FromBlock
+		return
+	}
+
+	// use the []primitive.M to get the height value
+	height = uint32(doc[0]["height"].(int64))
 
 	return
 }
@@ -74,10 +84,10 @@ func SyncState(fromBlock int) (newBlock int) {
 	// Set up timer for state sync
 	stateStart := time.Now()
 
-	// set skipSpv to true to trust every tx exists on the blopckchain,
+	// set skipSpv to true to trust every tx exists on the blockchain,
 	// false to verify every tx with a miner
 	newBlock = build(fromBlock, config.SkipSPV)
-	diff := time.Now().Sub(stateStart).Seconds()
+	diff := time.Since(stateStart).Seconds()
 	fmt.Printf("State sync complete to block height %d in %fs\n", newBlock, diff)
 
 	// update the state block clounter

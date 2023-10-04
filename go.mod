@@ -5,11 +5,13 @@ go 1.19
 require (
 	github.com/GorillaPool/go-junglebus v0.2.0
 	github.com/bitcoinschema/go-bmap v0.1.1
+	github.com/mitchellh/copystructure v1.2.0
+	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	go.mongodb.org/mongo-driver v1.12.1
 )
 
 require (
-	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 )
 
@@ -35,7 +37,7 @@ require (
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/libsv/go-bk v0.1.6 // indirect
 	github.com/libsv/go-bt v1.0.8 // indirect
-	github.com/libsv/go-bt/v2 v2.2.5 // indirect
+	github.com/libsv/go-bt/v2 v2.2.5
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -50,5 +52,5 @@ require (
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 )

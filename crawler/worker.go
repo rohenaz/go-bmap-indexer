@@ -3,11 +3,14 @@ package crawler
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/bitcoinschema/go-bmap"
+	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/rohenaz/go-bmap-indexer/database"
+	"github.com/ttacon/chalk"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -18,9 +21,11 @@ func Worker(readyFiles chan string) {
 		ingest(filename)
 
 		// After successful import, delete the file
-		err := os.Remove(filename)
-		if err != nil {
-			log.Printf("Error deleting file %s: %v", filename, err)
+		if config.DeleteAfterIngest {
+			err := os.Remove(filename)
+			if err != nil {
+				fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", filename, err, chalk.Reset)
+			}
 		}
 	}
 }
@@ -32,7 +37,7 @@ func ingest(filepath string) {
 	// Open the file
 	file, err := os.Open(filepath)
 	if err != nil {
-		log.Printf("Error opening file %s: %v", filepath, err)
+		fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error opening file", filepath, err, chalk.Reset)
 		return
 	}
 	defer file.Close()
@@ -51,25 +56,25 @@ func ingest(filepath string) {
 		byteLine := []byte(line)
 		err := json.Unmarshal(byteLine, &bmapData)
 		if err != nil {
-			log.Printf("[ERROR]: %v", err)
+			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
 			continue
 		}
 
 		// 3 - insert into mongo
 		if len(bmapData.MAP[0]) == 0 {
-			log.Println("No MAP data.")
+			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, "No MAP data.", chalk.Reset)
 			continue
 		}
 		_, ok := bmapData.MAP[0]["app"].(string)
 		if !ok {
-			log.Println("Error: MAP 'app' key does not exist.")
-			return
+			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, "MAP 'app' key does not exist.", chalk.Reset)
+			continue
 		}
 
 		mapType, ok := bmapData.MAP[0]["type"].(string)
 		if !ok {
-			log.Println("Error: MAP 'type' key does not exist.")
-			return
+			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, "MAP 'type' key does not exist", chalk.Reset)
+			continue
 		}
 		collectionName := mapType
 
@@ -90,13 +95,15 @@ func ingest(filepath string) {
 		_, err = conn.UpsertOne(collectionName, filter, bsonData)
 
 		if err != nil {
-			log.Printf("[ERROR]: %v", err)
+			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
+
 			continue
 		}
 	}
 
 	// Check for errors in the scanner
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error reading file %s: %v", filepath, err)
+		fmt.Printf("%sError reading file %s: %v%s\n", chalk.Cyan, filepath, err, chalk.Reset)
+		return
 	}
 }
