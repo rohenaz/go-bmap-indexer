@@ -8,6 +8,25 @@ import (
 	"github.com/ttacon/chalk"
 )
 
+// func CleanupFiles(readyFiles chan string) {
+// 	files, err := os.ReadDir("data")
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
+
+// 	for _, file := range files {
+// 		filename := fmt.Sprintf("data/%s", file.Name())
+// 		fileInfo, err := os.Stat(filename)
+// 		if err != nil {
+// 			log.Panic(err)
+// 		}
+// 		if fileInfo.Mode().Perm()&0222 == 0 {
+// 			fmt.Println("Processing file: ", filename)
+// 			readyFiles <- filename
+// 		}
+// 	}
+// }
+
 // WatchFiles for changes in the data directory
 func WatchFiles(readyFiles chan string) {
 	watcher, err := fsnotify.NewWatcher()

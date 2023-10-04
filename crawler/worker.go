@@ -32,8 +32,6 @@ func Worker(readyFiles chan string) {
 
 // ingest JSONLD file and ingest each line as a mongo document
 func ingest(filepath string) {
-	conn := database.GetConnection()
-
 	// Open the file
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -61,41 +59,9 @@ func ingest(filepath string) {
 		}
 
 		// 3 - insert into mongo
-		if len(bmapData.MAP[0]) == 0 {
-			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, "No MAP data.", chalk.Reset)
-			continue
-		}
-		_, ok := bmapData.MAP[0]["app"].(string)
-		if !ok {
-			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, "MAP 'app' key does not exist.", chalk.Reset)
-			continue
-		}
-
-		mapType, ok := bmapData.MAP[0]["type"].(string)
-		if !ok {
-			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, "MAP 'type' key does not exist", chalk.Reset)
-			continue
-		}
-		collectionName := mapType
-
-		filter := bson.M{"_id": bmapData.Tx.Tx.H}
-
-		bsonData := bson.M{
-			"_id": filter["_id"],
-			"tx":  bmapData.Tx,
-			"blk": bmapData.Blk,
-			"MAP": bmapData.MAP,
-		}
-
-		if bmapData.AIP != nil {
-			bsonData["AIP"] = bmapData.AIP
-		}
-
-		log.Println("Inserting into collection", collectionName)
-		_, err = conn.UpsertOne(collectionName, filter, bsonData)
-
+		err = saveToMongo(&bmapData)
 		if err != nil {
-			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
+			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
 
 			continue
 		}
@@ -106,4 +72,39 @@ func ingest(filepath string) {
 		fmt.Printf("%sError reading file %s: %v%s\n", chalk.Cyan, filepath, err, chalk.Reset)
 		return
 	}
+}
+
+func saveToMongo(bmapData *bmap.Tx) (err error) {
+	conn := database.GetConnection()
+	if len(bmapData.MAP[0]) == 0 {
+		return fmt.Errorf("No MAP data")
+	}
+	_, ok := bmapData.MAP[0]["app"].(string)
+	if !ok {
+		return fmt.Errorf("MAP 'app' key does not exist")
+	}
+
+	mapType, ok := bmapData.MAP[0]["type"].(string)
+	if !ok {
+		return fmt.Errorf("MAP 'type' key does not exist")
+	}
+	collectionName := mapType
+
+	filter := bson.M{"_id": bmapData.Tx.Tx.H}
+
+	bsonData := bson.M{
+		"_id": filter["_id"],
+		"tx":  bmapData.Tx,
+		"blk": bmapData.Blk,
+		"MAP": bmapData.MAP,
+	}
+
+	if bmapData.AIP != nil {
+		bsonData["AIP"] = bmapData.AIP
+	}
+
+	// log.Println("Inserting into collection", collectionName)
+	_, err = conn.UpsertOne(collectionName, filter, bsonData)
+
+	return err
 }

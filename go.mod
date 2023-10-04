@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/GorillaPool/go-junglebus v0.2.0
 	github.com/bitcoinschema/go-bmap v0.1.1
+	github.com/joho/godotenv v1.5.1
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	go.mongodb.org/mongo-driver v1.12.1
