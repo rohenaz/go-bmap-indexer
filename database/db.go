@@ -38,8 +38,7 @@ func Connect() error {
 
 	log.Println("MONGO_URL", bmapMongoURL)
 
-	clientOptions := options.Client().ApplyURI(bmapMongoURL).SetDirect(true)
-	//.SetMaxPoolSize(100)
+	clientOptions := options.Client().ApplyURI(bmapMongoURL).SetMaxPoolSize(100)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		fmt.Println("Failed", err)
