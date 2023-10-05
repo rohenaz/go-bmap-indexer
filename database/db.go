@@ -25,7 +25,6 @@ var globalClient *Connection
 // Connect establishes a connection to the mongo db
 func Connect() error {
 	bmapMongoURL := os.Getenv("MONGO_URL")
-	log.Println("MONGO_URL", bmapMongoURL)
 	if len(bmapMongoURL) == 0 {
 		return fmt.Errorf("set MONGO_URL before running %s", bmapMongoURL)
 	}
@@ -36,6 +35,9 @@ func Connect() error {
 	if bmapMongoURL[len(bmapMongoURL)-1:] != "/" {
 		bmapMongoURL = bmapMongoURL + "/"
 	}
+
+	log.Println("MONGO_URL", bmapMongoURL)
+
 	clientOptions := options.Client().ApplyURI(bmapMongoURL).SetDirect(true)
 	//.SetMaxPoolSize(100)
 	client, err := mongo.Connect(ctx, clientOptions)
