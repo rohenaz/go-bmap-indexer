@@ -235,6 +235,8 @@ func processTx(bmapData *bmap.Tx) {
 		"_id": bmapData.Tx.Tx.H,
 		"tx":  bmapData.Tx.Tx,
 		"blk": bmapData.Tx.Blk,
+		// go equivalent of Math.round(new Date().getTime() / 1000)
+		"timestamp": time.Now().Unix(),
 	}
 
 	if bmapData.AIP != nil {
