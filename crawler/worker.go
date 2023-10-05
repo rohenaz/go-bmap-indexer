@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/bitcoinschema/go-bmap"
 	"github.com/rohenaz/go-bmap-indexer/config"
@@ -13,6 +14,8 @@ import (
 	"github.com/ttacon/chalk"
 	"go.mongodb.org/mongo-driver/bson"
 )
+
+var CONCURRENT_INSERTS = 32
 
 // Worker for processing files
 func Worker(readyFiles chan string) {
@@ -45,6 +48,8 @@ func ingest(filepath string) {
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024) // set the buffer to 10MB
 
+	var wg sync.WaitGroup
+	limiter := make(chan struct{}, CONCURRENT_INSERTS)
 	for scanner.Scan() {
 		// 1 - read each string line from the file path
 		line := scanner.Text()
@@ -58,14 +63,22 @@ func ingest(filepath string) {
 			continue
 		}
 
-		// 3 - insert into mongo
-		err = saveToMongo(&bmapData)
-		if err != nil {
-			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
-
-			continue
-		}
+		limiter <- struct{}{}
+		wg.Add(1)
+		go func(bmapData *bmap.Tx) {
+			defer func() {
+				<-limiter
+				wg.Done()
+			}()
+			// 3 - insert into mongo
+			err = saveToMongo(bmapData)
+			if err != nil {
+				log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
+			}
+		}(&bmapData)
 	}
+
+	wg.Wait()
 
 	// Check for errors in the scanner
 	if err := scanner.Err(); err != nil {
@@ -106,5 +119,5 @@ func saveToMongo(bmapData *bmap.Tx) (err error) {
 	// log.Println("Inserting into collection", collectionName)
 	_, err = conn.UpsertOne(collectionName, filter, bsonData)
 
-	return err
+	return
 }
