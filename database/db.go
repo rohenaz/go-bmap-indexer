@@ -29,9 +29,11 @@ func Connect() error {
 	if len(bmapMongoURL) == 0 {
 		return fmt.Errorf("set MONGO_URL before running %s", bmapMongoURL)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	clientOptions := options.Client().ApplyURI(bmapMongoURL).SetDirect(true)
 	//.SetMaxPoolSize(100)
-	client, err := mongo.Connect(context.Background(), clientOptions)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		fmt.Println("Failed", err)
 		return err
