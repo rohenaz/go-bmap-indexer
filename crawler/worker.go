@@ -96,6 +96,12 @@ func saveToMongo(bsonData *bson.M) (err error) {
 	// 	return fmt.Errorf("MAP 'app' key does not exist")
 	// }
 
+	// I'm getting an error that this is nil not a string
+	// 	panic: interface conversion: interface {} is nil, not string
+
+	// goroutine 33 [running]:
+	// github.com/rohenaz/go-bmap-indexer/crawler.saveToMongo(0xc000560088)
+	//         /Users/satchmo/code/go-bmap-indexer/crawler/worker.go:99 +0x165
 	collectionName := (*bsonData)["collection"].(string)
 	delete(*bsonData, "collection")
 

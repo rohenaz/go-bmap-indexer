@@ -231,6 +231,16 @@ func processBlockDoneEvent(height uint32) {
 }
 
 func processTx(bmapData *bmap.Tx) {
+
+	// delete input.Tape from the inputs and outputs
+	for i := range bmapData.Tx.In {
+		bmapData.Tx.In[i].Tape = nil
+	}
+
+	for i := range bmapData.Tx.Out {
+		bmapData.Tx.Out[i].Tape = nil
+	}
+
 	bsonData := bson.M{
 		"_id": bmapData.Tx.Tx.H,
 		"tx":  bmapData.Tx.Tx,
@@ -250,10 +260,29 @@ func processTx(bmapData *bmap.Tx) {
 	}
 
 	if bmapData.Ord != nil {
+		// remove the data
+		for _, b := range bmapData.Ord {
+			b.Data = []byte{}
+
+			// take only the first 255 characters
+			if len(b.ContentType) > 255 {
+				b.ContentType = b.ContentType[:255]
+			}
+		}
+
 		bsonData["Ord"] = bmapData.Ord
 	}
 
 	if bmapData.B != nil {
+		for _, b := range bmapData.B {
+			// remove the data
+			b.Data.Bytes = []byte{}
+			b.Data.UTF8 = ""
+			if len(b.MediaType) > 255 {
+				b.MediaType = b.MediaType[:255]
+			}
+		}
+
 		bsonData["B"] = bmapData.B
 	}
 
