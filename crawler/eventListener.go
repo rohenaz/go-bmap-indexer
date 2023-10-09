@@ -101,7 +101,7 @@ func eventListener(subscription *junglebus.Subscription) {
 }
 
 func ProcessDone() {
-	for status := range blocksDone {
-		processBlockDoneEvent(status)
+	for height := range blocksDone {
+		processBlockDoneEvent(height)
 	}
 }

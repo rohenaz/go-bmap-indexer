@@ -237,6 +237,8 @@ func processTx(bmapData *bmap.Tx) {
 		"blk": bmapData.Tx.Blk,
 		// go equivalent of Math.round(new Date().getTime() / 1000)
 		"timestamp": time.Now().Unix(),
+		"in":        bmapData.Tx.In,
+		"out":       bmapData.Tx.Out,
 	}
 
 	if bmapData.AIP != nil {
@@ -264,7 +266,9 @@ func processTx(bmapData *bmap.Tx) {
 		return
 	}
 	bsonData["MAP"] = bmapData.MAP
-	if _, ok := bmapData.MAP[0]["type"].(string); !ok {
+	if collection, ok := bmapData.MAP[0]["type"].(string); ok {
+		bsonData["collection"] = collection
+	} else {
 		// log.Println("Error: MAP 'type' key does not exist.")
 		return
 	}

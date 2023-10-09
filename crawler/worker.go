@@ -8,7 +8,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/bitcoinschema/go-bmap"
 	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/rohenaz/go-bmap-indexer/database"
 	"github.com/ttacon/chalk"
@@ -38,7 +37,7 @@ func ingest(filepath string) {
 	// Open the file
 	file, err := os.Open(filepath)
 	if err != nil {
-		fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error opening file", filepath, err, chalk.Reset)
+		log.Panicf("%s%s %s: %v%s\n", chalk.Cyan, "Error opening file", filepath, err, chalk.Reset)
 		return
 	}
 	defer file.Close()
@@ -55,27 +54,27 @@ func ingest(filepath string) {
 		line := scanner.Text()
 
 		// 2 - unmarshal into bmap
-		var bmapData bmap.Tx
+		var bsonData bson.M
 		byteLine := []byte(line)
-		err := json.Unmarshal(byteLine, &bmapData)
+		err := json.Unmarshal(byteLine, &bsonData)
 		if err != nil {
-			fmt.Printf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
+			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
 			continue
 		}
 
 		limiter <- struct{}{}
 		wg.Add(1)
-		go func(bmapData *bmap.Tx) {
+		go func(bsonData *bson.M) {
 			defer func() {
 				<-limiter
 				wg.Done()
 			}()
 			// 3 - insert into mongo
-			err = saveToMongo(bmapData)
+			err = saveToMongo(bsonData)
 			if err != nil {
 				log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
 			}
-		}(&bmapData)
+		}(&bsonData)
 	}
 
 	wg.Wait()
@@ -87,37 +86,38 @@ func ingest(filepath string) {
 	}
 }
 
-func saveToMongo(bmapData *bmap.Tx) (err error) {
+func saveToMongo(bsonData *bson.M) (err error) {
 	conn := database.GetConnection()
-	if len(bmapData.MAP[0]) == 0 {
-		return fmt.Errorf("No MAP data")
-	}
-	_, ok := bmapData.MAP[0]["app"].(string)
-	if !ok {
-		return fmt.Errorf("MAP 'app' key does not exist")
-	}
+	// if len(bmapData.MAP) == 0 || len(bmapData.MAP[0]) == 0 {
+	// 	return fmt.Errorf("No MAP data")
+	// }
+	// _, ok := bmapData.MAP[0]["app"].(string)
+	// if !ok {
+	// 	return fmt.Errorf("MAP 'app' key does not exist")
+	// }
 
-	mapType, ok := bmapData.MAP[0]["type"].(string)
-	if !ok {
-		return fmt.Errorf("MAP 'type' key does not exist")
-	}
-	collectionName := mapType
+	collectionName := (*bsonData)["collection"].(string)
+	delete(*bsonData, "collection")
 
-	filter := bson.M{"_id": bmapData.Tx.Tx.H}
+	filter := bson.M{"_id": (*bsonData)["_id"]}
 
-	bsonData := bson.M{
-		"_id": filter["_id"],
-		"tx":  bmapData.Tx,
-		"blk": bmapData.Blk,
-		"MAP": bmapData.MAP,
-	}
+	// bsonData := bson.M{
+	// 	"_id": filter["_id"],
+	// 	"tx":  bmapData.Tx,
+	// 	"blk": bmapData.Blk,
+	// 	"MAP": bmapData.MAP,
+	// }
 
-	if bmapData.AIP != nil {
-		bsonData["AIP"] = bmapData.AIP
-	}
+	// if bmapData.AIP != nil {
+	// 	bsonData["AIP"] = bmapData.AIP
+	// }
+
+	// if bmapData.B != nil {
+	// 	bsonData["B"] = bmapData.B
+	// }
 
 	// log.Println("Inserting into collection", collectionName)
-	_, err = conn.UpsertOne(collectionName, filter, bsonData)
+	_, err = conn.UpsertOne(collectionName, filter, *bsonData)
 
 	return
 }
