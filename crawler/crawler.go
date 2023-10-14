@@ -125,6 +125,7 @@ func Crawl(height int) (newHeight int) {
 			}
 		},
 		OnError: func(err error) {
+			log.Printf("[ERRORa]: %v", err)
 			eventChannel <- &Event{Type: "error", Error: err}
 		},
 	}
