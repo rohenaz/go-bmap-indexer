@@ -75,7 +75,7 @@ func Crawl(height int) (newHeight int) {
 	// wgs[uint32(height)] = &sync.WaitGroup{}
 
 	junglebusClient, err := junglebus.New(
-		junglebus.WithHTTP("https://junglebus.gorillapool.io"),
+		junglebus.WithHTTP("https://dfw.junglebus.gorillapool.io"),
 	)
 	if err != nil {
 		log.Fatalln(err.Error())

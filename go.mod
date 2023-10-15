@@ -3,13 +3,11 @@ module github.com/rohenaz/go-bmap-indexer
 go 1.19
 
 require (
-	github.com/GorillaPool/go-junglebus v0.2.0
+	github.com/GorillaPool/go-junglebus v0.2.1
 	github.com/bitcoinschema/go-bmap v0.1.2
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	go.mongodb.org/mongo-driver v1.12.1
 )
-
-require github.com/google/go-cmp v0.5.9 // indirect
 
 require (
 	github.com/bitcoinschema/go-aip v0.2.0 // indirect
@@ -27,6 +25,7 @@ require (
 	github.com/centrifugal/protocol v0.8.11 // indirect
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
