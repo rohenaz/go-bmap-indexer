@@ -50,7 +50,9 @@ func ProcessDone() {
 	for heightMap := range blocksDone {
 		// loop over single entry map
 		for height, txCount := range heightMap {
-			processBlockDoneEvent(height, txCount)
+			if txCount > 0 {
+				processBlockDoneEvent(height, txCount)
+			}
 			break
 		}
 	}
