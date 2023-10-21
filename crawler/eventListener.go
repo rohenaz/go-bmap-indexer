@@ -31,8 +31,10 @@ func eventListener(subscription *junglebus.Subscription) {
 
 				// copy the var
 				var count = txCount
-				log.Printf("%sBlock %d done with %d transactions%s\n", chalk.Green, event.Height, count, chalk.Reset)
-				blocksDone <- map[uint32]uint32{event.Height: count}
+				if count > 0 {
+					log.Printf("%sBlock %d done with %d transactions%s\n", chalk.Green, event.Height, count, chalk.Reset)
+					blocksDone <- map[uint32]uint32{event.Height: count}
+				}
 				txCount = 0
 				continue
 			}
