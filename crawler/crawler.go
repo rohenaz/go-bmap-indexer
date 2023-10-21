@@ -217,7 +217,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 	}
 	// // check if the file exists at path
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		log.Printf("Block %d done with %d txs", height, count)
+		log.Printf("Block %d done with %d txs", height, 0)
 		return
 	}
 
@@ -229,6 +229,9 @@ func processBlockDoneEvent(height uint32, count uint32) {
 			fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", filename, err, chalk.Reset)
 		}
 	}
+
+	log.Printf("Block %d done with %d txs", height, count)
+
 }
 
 func processTx(bmapData *bmap.Tx) {
