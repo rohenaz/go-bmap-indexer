@@ -30,7 +30,7 @@ func eventListener(subscription *junglebus.Subscription) {
 			case "block-done":
 				// Convert a string to a uint32
 
-				log.Printf("%sBlock %d done%s\n", chalk.Green, event.Height, chalk.Reset)
+				log.Printf("%sBlock %d done with %d transactions%s\n", chalk.Green, event.Height, txCount, chalk.Reset)
 				blocksDone <- map[uint32]uint32{event.Height: txCount}
 				txCount = 0
 				continue
