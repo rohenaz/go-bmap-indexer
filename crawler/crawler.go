@@ -95,7 +95,7 @@ func Crawl(height int) (newHeight int) {
 	eventHandler := junglebus.EventHandler{
 		// Mined tx callback
 		OnTransaction: func(tx *models.TransactionResponse) {
-			log.Printf("[TXa]: %d: %v", tx.BlockHeight, tx.Id)
+			log.Printf("[TX]: %d: %v", tx.BlockHeight, tx.Id)
 
 			eventChannel <- &Event{
 				Type:        "transaction",
@@ -107,7 +107,7 @@ func Crawl(height int) (newHeight int) {
 		},
 		// Mempool tx callback
 		OnMempool: func(tx *models.TransactionResponse) {
-			log.Printf("[MEMa]: %d: %v", tx.BlockHeight, tx.Id)
+			log.Printf("[MEM]: %d: %v", tx.BlockHeight, tx.Id)
 
 			eventChannel <- &Event{
 				Type:        "mempool",
@@ -116,14 +116,11 @@ func Crawl(height int) (newHeight int) {
 			}
 		},
 		OnStatus: func(status *models.ControlResponse) {
-			log.Printf("[STATa]: %d: %v", status.Block, status.Status)
-
 			if status.Status == "error" {
 				log.Printf("[ERROR %d]: %v", status.StatusCode, status.Message)
 				eventChannel <- &Event{Type: "error", Error: fmt.Errorf(status.Message)}
 				return
 			} else {
-
 				eventChannel <- &Event{
 					Type:   "status",
 					Height: status.Block,
@@ -132,7 +129,7 @@ func Crawl(height int) (newHeight int) {
 			}
 		},
 		OnError: func(err error) {
-			log.Printf("[ERRORa]: %v", err)
+			log.Printf("[ERROR]: %v", err)
 			eventChannel <- &Event{Type: "error", Error: err}
 		},
 	}
