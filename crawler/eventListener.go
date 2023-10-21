@@ -30,7 +30,6 @@ func eventListener(subscription *junglebus.Subscription) {
 			case "block-done":
 				// Convert a string to a uint32
 				blocksDone <- map[uint32]uint32{event.Height: txCount}
-
 				txCount = 0
 				continue
 			}

@@ -216,7 +216,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 	filename := fmt.Sprintf("data/%d.json", height)
 
 	// // check if the file exists at path
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
+	if _, err := os.Stat(filename); count > 0 && os.IsNotExist(err) {
 		log.Printf("Block %d done with %d txs", height, count)
 		return
 	}
