@@ -29,6 +29,8 @@ func eventListener(subscription *junglebus.Subscription) {
 				continue
 			case "block-done":
 				// Convert a string to a uint32
+
+				log.Printf("%sBlock %d done%s\n", chalk.Green, event.Height, chalk.Reset)
 				blocksDone <- map[uint32]uint32{event.Height: txCount}
 				txCount = 0
 				continue
@@ -43,6 +45,7 @@ func eventListener(subscription *junglebus.Subscription) {
 
 func ProcessDone() {
 	for heightMap := range blocksDone {
+		// loop over single entry map
 		for height, txCount := range heightMap {
 			processBlockDoneEvent(height, txCount)
 			break
