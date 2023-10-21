@@ -212,7 +212,6 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 // }
 
 func processBlockDoneEvent(height uint32, count uint32) {
-	// log.Printf("[BLOCK DONE]: %v, %d", status, status.Block)
 
 	filename := fmt.Sprintf("data/%d.json", height)
 
@@ -221,12 +220,6 @@ func processBlockDoneEvent(height uint32, count uint32) {
 		log.Printf("Block %d done with %d txs", height, count)
 		return
 	}
-
-	// // change file to readonly (ready for ingestion)
-	// // err := os.Chmod(filename, 0444) // read-only permissions
-	// // if err != nil {
-	// // 	log.Printf("Error changing permissions for %s: %v", filename, err)
-	// // }
 
 	ingest(filename)
 	state.SaveProgress(height)

@@ -1,21 +1,13 @@
 package crawler
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/GorillaPool/go-junglebus"
 	"github.com/ttacon/chalk"
 )
-
-// func getWgForBlock(height int) *sync.WaitGroup {
-// 	if wgs[uint32(height)] == nil {
-// 		return &sync.WaitGroup{}
-// 	}
-
-// 	return wgs[uint32(height)]
-// }
-
-// var limiter = make(chan struct{}, 32)
 
 // map of block height to tx count
 var blocksDone = make(chan map[uint32]uint32, 1000)
@@ -35,8 +27,13 @@ func eventListener(subscription *junglebus.Subscription) {
 
 				continue
 			case "block-done":
-				// wg.Wait()
-				blocksDone <- map[uint32]uint32{event.Height: 0}
+				// Convert a string to a uint32
+				txCount, err := strconv.ParseUint(event.Status, 10, 32)
+				if err != nil {
+					fmt.Println(err)
+					txCount = 0
+				}
+				blocksDone <- map[uint32]uint32{event.Height: uint32(txCount)}
 				continue
 			}
 		case "mempool":
@@ -44,16 +41,12 @@ func eventListener(subscription *junglebus.Subscription) {
 		case "error":
 			log.Printf("%sERROR: %s%s\n", chalk.Green, event.Error.Error(), chalk.Reset)
 		}
-
 	}
 }
 
 func ProcessDone() {
 	for heightMap := range blocksDone {
-		var height, txCount uint32
-		for k, _ := range heightMap {
-			height = k
-			txCount = heightMap[k]
+		for height, txCount := range heightMap {
 			processBlockDoneEvent(height, txCount)
 			break
 		}
