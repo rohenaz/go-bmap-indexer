@@ -230,7 +230,8 @@ func processBlockDoneEvent(height uint32, count uint32) {
 		}
 	}
 
-	log.Printf("Block %d done with %d txs", height, count)
+	// log ingestions in green using chalk
+	log.Printf("%sIngested %d txs from block %d%s", chalk.Cyan, count, height, chalk.Reset)
 
 }
 
