@@ -214,9 +214,12 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 func processBlockDoneEvent(height uint32, count uint32) {
 
 	filename := fmt.Sprintf("data/%d.json", height)
-
+	if count == 0 {
+		// nothing to do
+		return
+	}
 	// // check if the file exists at path
-	if _, err := os.Stat(filename); count > 0 && os.IsNotExist(err) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		log.Printf("Block %d done with %d txs", height, count)
 		return
 	}
