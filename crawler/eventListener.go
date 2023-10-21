@@ -49,7 +49,13 @@ func eventListener(subscription *junglebus.Subscription) {
 }
 
 func ProcessDone() {
-	for height := range blocksDone {
-		processBlockDoneEvent(height)
+	for heightMap := range blocksDone {
+		var height, txCount uint32
+		for k, _ := range heightMap {
+			height = k
+			txCount = heightMap[k]
+			processBlockDoneEvent(height, txCount)
+			break
+		}
 	}
 }
