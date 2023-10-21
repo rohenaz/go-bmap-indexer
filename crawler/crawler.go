@@ -211,14 +211,14 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 // 	log.Printf("[MEMPOOL BMAP]: %d: %v", bmapTx.Blk.I, bmapTx.Tx.Tx.H)
 // }
 
-func processBlockDoneEvent(height uint32) {
+func processBlockDoneEvent(height uint32, count uint32) {
 	// log.Printf("[BLOCK DONE]: %v, %d", status, status.Block)
 
 	filename := fmt.Sprintf("data/%d.json", height)
 
 	// // check if the file exists at path
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		log.Printf("Block %d done with %d txs", height, 0)
+		log.Printf("Block %d done with %d txs", height, count)
 		return
 	}
 
