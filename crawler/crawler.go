@@ -284,7 +284,7 @@ func processTx(bmapData *bmap.Tx) {
 			// only if this is a bitcoinschema type, do we keep the data
 			// TODO: Allow user to select the types they want to index fully
 			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != nil {
-				if slices.Contains(bitcoinSchemaTypes, fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
+				if !slices.Contains(bitcoinSchemaTypes, fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
 					b.Data.UTF8 = ""
 				}
 			}
