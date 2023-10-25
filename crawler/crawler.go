@@ -18,6 +18,7 @@ import (
 	"github.com/rohenaz/go-bmap-indexer/state"
 	"github.com/ttacon/chalk"
 	"go.mongodb.org/mongo-driver/bson"
+	"golang.org/x/exp/slices"
 )
 
 // var wgs map[uint32]*sync.WaitGroup
@@ -275,12 +276,15 @@ func processTx(bmapData *bmap.Tx) {
 		bsonData["Ord"] = bmapData.Ord
 	}
 
+	bitcoinSchemaTypes := []string{"friend", "like", "report", "post", "message"}
 	if bmapData.B != nil {
 		for _, b := range bmapData.B {
 			// remove the data if its not a message
 
 			b.Data.Bytes = []byte{}
-			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != "message" {
+			// only if this is a bitcoinschema type, do we keep the data
+			// TODO: Allow user to select the types they want to index fully
+			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != nil && slices.Contains(bitcoinSchemaTypes, bmapData.MAP[0]["type"]) {
 				b.Data.UTF8 = ""
 			}
 			if len(b.MediaType) > 255 {
