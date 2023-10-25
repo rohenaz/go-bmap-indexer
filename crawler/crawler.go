@@ -280,12 +280,13 @@ func processTx(bmapData *bmap.Tx) {
 	if bmapData.B != nil {
 		for _, b := range bmapData.B {
 			// remove the data if its not a message
-
 			b.Data.Bytes = []byte{}
 			// only if this is a bitcoinschema type, do we keep the data
 			// TODO: Allow user to select the types they want to index fully
-			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != nil && slices.Contains(bitcoinSchemaTypes, bmapData.MAP[0]["type"]) {
-				b.Data.UTF8 = ""
+			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != nil {
+				if slices.Contains(bitcoinSchemaTypes, fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
+					b.Data.UTF8 = ""
+				}
 			}
 			if len(b.MediaType) > 255 {
 				b.MediaType = b.MediaType[:255]
