@@ -276,7 +276,7 @@ func processTx(bmapData *bmap.Tx) {
 		bsonData["Ord"] = bmapData.Ord
 	}
 
-	bitcoinSchemaTypes := []string{"friend", "like", "report", "post", "message"}
+	bitcoinSchemaTypes := []string{"friend", "like", "repost", "post", "message"}
 	if bmapData.B != nil {
 		for _, b := range bmapData.B {
 			// remove the data if its not a message
