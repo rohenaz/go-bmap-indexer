@@ -263,12 +263,12 @@ func processTx(bmapData *bmap.Tx) {
 
 	if bmapData.Ord != nil {
 		// remove the data
-		for _, b := range bmapData.Ord {
-			b.Data = []byte{}
+		for _, o := range bmapData.Ord {
+			o.Data = []byte{}
 
 			// take only the first 255 characters
-			if len(b.ContentType) > 255 {
-				b.ContentType = b.ContentType[:255]
+			if len(o.ContentType) > 255 {
+				o.ContentType = o.ContentType[:255]
 			}
 		}
 
@@ -277,9 +277,12 @@ func processTx(bmapData *bmap.Tx) {
 
 	if bmapData.B != nil {
 		for _, b := range bmapData.B {
-			// remove the data
+			// remove the data if its not a message
+
 			b.Data.Bytes = []byte{}
-			b.Data.UTF8 = ""
+			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != "message" {
+				b.Data.UTF8 = ""
+			}
 			if len(b.MediaType) > 255 {
 				b.MediaType = b.MediaType[:255]
 			}
