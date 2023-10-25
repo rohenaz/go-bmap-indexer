@@ -287,6 +287,8 @@ func processTx(bmapData *bmap.Tx) {
 				if !slices.Contains(bitcoinSchemaTypes, fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
 					b.Data.UTF8 = ""
 				}
+			} else {
+				b.Data.UTF8 = ""
 			}
 			if len(b.MediaType) > 255 {
 				b.MediaType = b.MediaType[:255]
