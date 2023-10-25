@@ -296,6 +296,7 @@ func processTx(bmapData *bmap.Tx) {
 		log.Println("No MAP data.")
 		return
 	}
+
 	bsonData["MAP"] = bmapData.MAP
 	if collection, ok := bmapData.MAP[0]["type"].(string); ok {
 		bsonData["collection"] = collection
