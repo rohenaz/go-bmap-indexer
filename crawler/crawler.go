@@ -18,6 +18,7 @@ import (
 	"github.com/rohenaz/go-bmap-indexer/state"
 	"github.com/ttacon/chalk"
 	"go.mongodb.org/mongo-driver/bson"
+	"golang.org/x/exp/slices"
 )
 
 // var wgs map[uint32]*sync.WaitGroup
@@ -75,7 +76,7 @@ func Crawl(height int) (newHeight int) {
 	// wgs[uint32(height)] = &sync.WaitGroup{}
 
 	junglebusClient, err := junglebus.New(
-		junglebus.WithHTTP("https://junglebus.gorillapool.io"),
+		junglebus.WithHTTP(config.JunglebusEndpoint),
 	)
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -95,7 +96,7 @@ func Crawl(height int) (newHeight int) {
 	eventHandler := junglebus.EventHandler{
 		// Mined tx callback
 		OnTransaction: func(tx *models.TransactionResponse) {
-			log.Printf("[TXa]: %d: %v", tx.BlockHeight, tx.Id)
+			// log.Printf("[TX]: %d: %v", tx.BlockHeight, tx.Id)
 
 			eventChannel <- &Event{
 				Type:        "transaction",
@@ -107,7 +108,7 @@ func Crawl(height int) (newHeight int) {
 		},
 		// Mempool tx callback
 		OnMempool: func(tx *models.TransactionResponse) {
-			log.Printf("[MEMa]: %d: %v", tx.BlockHeight, tx.Id)
+			log.Printf("[MEM]: %d: %v", tx.BlockHeight, tx.Id)
 
 			eventChannel <- &Event{
 				Type:        "mempool",
@@ -116,15 +117,20 @@ func Crawl(height int) (newHeight int) {
 			}
 		},
 		OnStatus: func(status *models.ControlResponse) {
-			log.Printf("[STATa]: %d: %v", status.Block, status.Status)
-
-			eventChannel <- &Event{
-				Type:   "status",
-				Height: status.Block,
-				Status: status.Status,
+			if status.Status == "error" {
+				log.Printf("[ERROR %d]: %v", status.StatusCode, status.Message)
+				eventChannel <- &Event{Type: "error", Error: fmt.Errorf(status.Message)}
+				return
+			} else {
+				eventChannel <- &Event{
+					Type:   "status",
+					Height: status.Block,
+					Status: status.Status,
+				}
 			}
 		},
 		OnError: func(err error) {
+			log.Printf("[ERROR]: %v", err)
 			eventChannel <- &Event{Type: "error", Error: err}
 		},
 	}
@@ -203,22 +209,15 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 // 	log.Printf("[MEMPOOL BMAP]: %d: %v", bmapTx.Blk.I, bmapTx.Tx.Tx.H)
 // }
 
-func processBlockDoneEvent(height uint32) {
-	// log.Printf("[BLOCK DONE]: %v, %d", status, status.Block)
+func processBlockDoneEvent(height uint32, count uint32) {
 
 	filename := fmt.Sprintf("data/%d.json", height)
 
 	// // check if the file exists at path
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		log.Printf("Block %d done with %d txs", height, 0)
+		log.Printf("No block file found for %d ", height)
 		return
 	}
-
-	// // change file to readonly (ready for ingestion)
-	// // err := os.Chmod(filename, 0444) // read-only permissions
-	// // if err != nil {
-	// // 	log.Printf("Error changing permissions for %s: %v", filename, err)
-	// // }
 
 	ingest(filename)
 	state.SaveProgress(height)
@@ -228,15 +227,31 @@ func processBlockDoneEvent(height uint32) {
 			fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", filename, err, chalk.Reset)
 		}
 	}
+
+	// log ingestions in green using chalk
+	log.Printf("%sIngested %d txs from block %d%s", chalk.Cyan, count, height, chalk.Reset)
+
 }
 
 func processTx(bmapData *bmap.Tx) {
+
+	// delete input.Tape from the inputs and outputs
+	for i := range bmapData.Tx.In {
+		bmapData.Tx.In[i].Tape = nil
+	}
+
+	for i := range bmapData.Tx.Out {
+		bmapData.Tx.Out[i].Tape = nil
+	}
+
 	bsonData := bson.M{
 		"_id": bmapData.Tx.Tx.H,
 		"tx":  bmapData.Tx.Tx,
 		"blk": bmapData.Tx.Blk,
-		"in":  bmapData.Tx.In,
-		"out": bmapData.Tx.Out,
+		// go equivalent of Math.round(new Date().getTime() / 1000)
+		"timestamp": time.Now().Unix(),
+		"in":        bmapData.Tx.In,
+		"out":       bmapData.Tx.Out,
 	}
 
 	if bmapData.AIP != nil {
@@ -248,10 +263,38 @@ func processTx(bmapData *bmap.Tx) {
 	}
 
 	if bmapData.Ord != nil {
+		// remove the data
+		for _, o := range bmapData.Ord {
+			o.Data = []byte{}
+
+			// take only the first 255 characters
+			if len(o.ContentType) > 255 {
+				o.ContentType = o.ContentType[:255]
+			}
+		}
+
 		bsonData["Ord"] = bmapData.Ord
 	}
 
+	bitcoinSchemaTypes := []string{"friend", "like", "repost", "post", "message"}
 	if bmapData.B != nil {
+		for _, b := range bmapData.B {
+			// remove the data if its not a message
+			b.Data.Bytes = []byte{}
+			// only if this is a bitcoinschema type, do we keep the data
+			// TODO: Allow user to select the types they want to index fully
+			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != nil {
+				if !slices.Contains(bitcoinSchemaTypes, fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
+					b.Data.UTF8 = ""
+				}
+			} else {
+				b.Data.UTF8 = ""
+			}
+			if len(b.MediaType) > 255 {
+				b.MediaType = b.MediaType[:255]
+			}
+		}
+
 		bsonData["B"] = bmapData.B
 	}
 
@@ -263,6 +306,7 @@ func processTx(bmapData *bmap.Tx) {
 		log.Println("No MAP data.")
 		return
 	}
+
 	bsonData["MAP"] = bmapData.MAP
 	if collection, ok := bmapData.MAP[0]["type"].(string); ok {
 		bsonData["collection"] = collection

@@ -3,17 +3,10 @@ module github.com/rohenaz/go-bmap-indexer
 go 1.19
 
 require (
-	github.com/GorillaPool/go-junglebus v0.2.0
-	github.com/bitcoinschema/go-bmap v0.1.1
-	github.com/joho/godotenv v1.5.1
-	github.com/mitchellh/copystructure v1.2.0
+	github.com/GorillaPool/go-junglebus v0.2.2
+	github.com/bitcoinschema/go-bmap v0.1.2
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	go.mongodb.org/mongo-driver v1.12.1
-)
-
-require (
-	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 )
 
 require (
@@ -21,9 +14,9 @@ require (
 	github.com/bitcoinschema/go-b v0.1.0 // indirect
 	github.com/bitcoinschema/go-bap v0.3.2 // indirect
 	github.com/bitcoinschema/go-bitcoin v0.3.20 // indirect
-	github.com/bitcoinschema/go-bob v0.4.0 // indirect
+	github.com/bitcoinschema/go-bob v0.4.1 // indirect
 	github.com/bitcoinschema/go-boost v0.1.0 // indirect
-	github.com/bitcoinschema/go-bpu v0.1.0 // indirect
+	github.com/bitcoinschema/go-bpu v0.1.1 // indirect
 	github.com/bitcoinschema/go-map v0.1.0 // indirect
 	github.com/bitcoinsv/bsvd v0.0.0-20190609155523-4c29707f7173 // indirect
 	github.com/bitcoinsv/bsvlog v0.0.0-20181216181007-cb81b076bf2e // indirect
@@ -32,6 +25,7 @@ require (
 	github.com/centrifugal/protocol v0.8.11 // indirect
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -50,8 +44,9 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )

@@ -28,13 +28,26 @@ func Connect() error {
 	if len(bmapMongoURL) == 0 {
 		return fmt.Errorf("set MONGO_URL before running %s", bmapMongoURL)
 	}
-	clientOptions := options.Client().ApplyURI(bmapMongoURL).
-		SetMaxPoolSize(100)
-	client, err := mongo.Connect(context.Background(), clientOptions)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// catch case where trailing backslash is missing
+	if bmapMongoURL[len(bmapMongoURL)-1:] != "/" {
+		bmapMongoURL = bmapMongoURL + "/"
+	}
+
+	clientOptions := options.Client().ApplyURI(bmapMongoURL).SetMaxPoolSize(100)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		fmt.Println("Failed", err)
 		return err
 	}
+
+	// defer func() {
+	// 	if err = client.Disconnect(ctx); err != nil {
+	// 		panic(err)
+	// 	}
+	// }()
 
 	globalClient = &Connection{client}
 
