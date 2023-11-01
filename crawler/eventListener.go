@@ -28,7 +28,6 @@ func eventListener(subscription *junglebus.Subscription) {
 
 				continue
 			case "block-done":
-
 				// copy the var
 				var count = txCount
 				if count > 0 {
