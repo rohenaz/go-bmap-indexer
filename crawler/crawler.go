@@ -96,15 +96,15 @@ func Crawl(height int) (newHeight int) {
 	eventHandler := junglebus.EventHandler{
 		// Mined tx callback
 		OnTransaction: func(tx *models.TransactionResponse) {
-			log.Printf("[TX]: %d: %v", tx.BlockHeight, tx.Id)
+			log.Printf("[TX]: %d - %d: %v", tx.BlockHeight, len(tx.Transaction), tx.Id)
 
-			// eventChannel <- &Event{
-			// 	Type:        "transaction",
-			// 	Height:      tx.BlockHeight,
-			// 	Time:        tx.BlockTime,
-			// 	Transaction: tx.Transaction,
-			// 	Id:          tx.Id,
-			// }
+			eventChannel <- &Event{
+				Type:        "transaction",
+				Height:      tx.BlockHeight,
+				Time:        tx.BlockTime,
+				Transaction: tx.Transaction,
+				Id:          tx.Id,
+			}
 		},
 		// Mempool tx callback
 		OnMempool: func(tx *models.TransactionResponse) {
