@@ -1,5 +1,5 @@
-github.com/GorillaPool/go-junglebus v0.2.2 h1:APDhBGqjfadQRSXoVYxAp5o1FkhU4QJB5JQxRECq3JA=
-github.com/GorillaPool/go-junglebus v0.2.2/go.mod h1:LigiSImLy9G/Tg9RKbn+pNYnuPbs5oLUprQZkxEr/2k=
+github.com/GorillaPool/go-junglebus v0.1.0 h1:o8hQASussbLJuxAaYqEx/NMytJynOvPSXJ+Ml+QWtHc=
+github.com/GorillaPool/go-junglebus v0.1.0/go.mod h1:LigiSImLy9G/Tg9RKbn+pNYnuPbs5oLUprQZkxEr/2k=
 github.com/bitcoinschema/go-aip v0.2.0 h1:OGfWCG/tuiL7p8al2iSE/7Zr7PqgDOmxYydVwUBH1eE=
 github.com/bitcoinschema/go-aip v0.2.0/go.mod h1:ayX+1T4zCnXUsDeW9j2pfxTvKn/qtIuXGkWDZfO1y74=
 github.com/bitcoinschema/go-b v0.1.0 h1:PTDcTPWG9ulnn3e1N2ZzGMBbVBRw37/Sj1Ln87JtM2s=
