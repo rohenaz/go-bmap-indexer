@@ -122,7 +122,6 @@ func Crawl(height int) (newHeight int) {
 				eventChannel <- &Event{Type: "error", Error: fmt.Errorf(status.Message)}
 				return
 			} else {
-				log.Printf("[PRE-EVENT STATUS]: %d: %s\n", status.Block, status.Message)
 				eventChannel <- &Event{
 					Type:   "status",
 					Height: status.Block,
