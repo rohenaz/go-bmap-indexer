@@ -19,6 +19,7 @@ func eventListener(subscription *junglebus.Subscription) {
 		switch event.Type {
 		case "transaction":
 			txCount++
+			log.Printf("%sTransaction %s %s\n", chalk.Green, event.Id, chalk.Reset)
 			processTransactionEvent(event.Transaction, event.Height, event.Time)
 
 		case "status":
