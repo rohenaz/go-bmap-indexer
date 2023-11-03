@@ -206,7 +206,7 @@ func processMempoolEvent(rawtx []byte) {
 		log.Printf("[ERROR]: %v", err)
 		return
 	}
-	// log.Printf("[MEMPOOL BMAP]: %d: %v", bmapTx.Blk.I, bmapTx.Tx.Tx.H)
+	log.Printf("[MEMPOOL BMAP]: %d: %s", bmapTx.Blk.I, bmapTx.Tx.Tx.H)
 	processTx(bmapTx)
 }
 
