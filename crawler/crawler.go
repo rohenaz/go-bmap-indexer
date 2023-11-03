@@ -194,20 +194,21 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 	}
 }
 
-// func processMempoolEvent(rawtx []byte) {
-// 	log.Printf("[MEMPOOL TX]: %s", tx.Id)
-// 	t, err := bt.NewTxFromBytes(rawtx)
-// 	if err != nil {
-// 		log.Printf("[ERROR]: %v", err)
-// 		return
-// 	}
-// 	bmapTx, err := bmap.NewFromTx(t)
-// 	if err != nil {
-// 		log.Printf("[ERROR]: %v", err)
-// 		return
-// 	}
-// 	log.Printf("[MEMPOOL BMAP]: %d: %v", bmapTx.Blk.I, bmapTx.Tx.Tx.H)
-// }
+func processMempoolEvent(rawtx []byte) {
+
+	t, err := bt.NewTxFromBytes(rawtx)
+	if err != nil {
+		log.Printf("[ERROR]: %v", err)
+		return
+	}
+	bmapTx, err := bmap.NewFromTx(t)
+	if err != nil {
+		log.Printf("[ERROR]: %v", err)
+		return
+	}
+	// log.Printf("[MEMPOOL BMAP]: %d: %v", bmapTx.Blk.I, bmapTx.Tx.Tx.H)
+	processTx(bmapTx)
+}
 
 func processBlockDoneEvent(height uint32, count uint32) {
 

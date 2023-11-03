@@ -43,7 +43,7 @@ func eventListener(subscription *junglebus.Subscription) {
 				continue
 			}
 		case "mempool":
-			// processMempoolEvent(event.Transaction)
+			processMempoolEvent(event.Transaction)
 		case "error":
 			log.Printf("%sERROR: %s%s\n", chalk.Green, event.Error.Error(), chalk.Reset)
 		}
