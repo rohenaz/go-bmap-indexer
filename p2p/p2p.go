@@ -24,7 +24,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
-	"github.com/libp2p/go-libp2p/core/protocol"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
 	"github.com/libsv/go-bk/wif"
@@ -32,6 +31,7 @@ import (
 	mc "github.com/multiformats/go-multicodec"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/rohenaz/go-bmap-indexer/cache"
+	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/rohenaz/go-bmap-indexer/persist"
 	"github.com/ttacon/chalk"
 )
@@ -112,6 +112,8 @@ func handleStream(stream network.Stream) {
 
 // Start initializes the P2P node and connects it to the network
 func Start() {
+	ctx := context.Background()
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("No .env file loaded")
@@ -131,6 +133,11 @@ func Start() {
 	)
 	if err != nil {
 		log.Fatalf("Error creating libp2p host: %s", err)
+	}
+
+	// loop over config.OutputTypes and subscribe to each topic
+	for _, topic := range strings.Split(config.OutputTypes, ",") {
+		go discoverPeers(ctx, h, &topic)
 	}
 
 	// define protocol
@@ -181,35 +188,36 @@ func Start() {
 			dutil.Advertise(ctx, routingDiscovery, namespace)
 			log.Println("Successfully announced!")
 
+			// Lets subscribe to topics via pubsub - based on csv list config.OutputTypes
+
 			// Now, look for others who have announced
 			// This is like your friend telling you the location to meet you.
-			log.Println("Searching for other peers...")
-			peerChan, err := routingDiscovery.FindPeers(ctx, namespace)
-			if err != nil {
-				panic(err)
-			}
+			// log.Println("Searching for other peers...")
+			// peerChan, err := routingDiscovery.FindPeers(ctx, namespace)
+			// if err != nil {
+			// 	panic(err)
+			// }
 
-			for peer := range peerChan {
-				if peer.ID == h.ID() {
-					continue
-				}
-				log.Println("Found peer:", peer)
+			// for peer := range peerChan {
+			// 	if peer.ID == h.ID() {
+			// 		continue
+			// 	}
+			// 	log.Println("Found peer:", peer)
 
-				log.Println("Connecting to:", peer)
-				stream, err := h.NewStream(ctx, peer.ID, protocol.ID("/bmap/1.0.0"))
+			// 	log.Println("Connecting to:", peer)
+			// 	stream, err := h.NewStream(ctx, peer.ID, protocol.ID("/bmap/1.0.0"))
+			// 	if err != nil {
+			// 		log.Println("Connection failed:", err)
+			// 		continue
+			// 	} else {
+			// 		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-				if err != nil {
-					log.Println("Connection failed:", err)
-					continue
-				} else {
-					rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+			// 		go writeData(rw)
+			// 		go readData(rw)
+			// 	}
 
-					go writeData(rw)
-					go readData(rw)
-				}
-
-				log.Println("Connected to:", peer)
-			}
+			// 	log.Println("Connected to:", peer)
+			// }
 
 			// announce what we have
 
@@ -227,6 +235,63 @@ func Start() {
 
 	// empty channel
 	<-make(chan struct{})
+}
+
+func initDHT(ctx context.Context, h host.Host) *dht.IpfsDHT {
+	// Start a DHT, for use in peer discovery. We can't just make a new DHT
+	// client because we want each peer to maintain its own local copy of the
+	// DHT, so that the bootstrapping node of the DHT can go down without
+	// inhibiting future peer discovery.
+	kademliaDHT, err := dht.New(ctx, h)
+	if err != nil {
+		panic(err)
+	}
+	if err = kademliaDHT.Bootstrap(ctx); err != nil {
+		panic(err)
+	}
+	var wg sync.WaitGroup
+	for _, peerAddr := range dht.DefaultBootstrapPeers {
+		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := h.Connect(ctx, *peerinfo); err != nil {
+				fmt.Println("Bootstrap warning:", err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	return kademliaDHT
+}
+
+func discoverPeers(ctx context.Context, h host.Host, topicName *string) {
+	kademliaDHT := initDHT(ctx, h)
+	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
+	dutil.Advertise(ctx, routingDiscovery, *topicName)
+
+	// Look for others who have announced and attempt to connect to them
+	anyConnected := false
+	for !anyConnected {
+		fmt.Println("Searching for peers...")
+		peerChan, err := routingDiscovery.FindPeers(ctx, *topicName)
+		if err != nil {
+			panic(err)
+		}
+		for peer := range peerChan {
+			if peer.ID == h.ID() {
+				continue // No self connection
+			}
+			err := h.Connect(ctx, peer)
+			if err != nil {
+				fmt.Printf("Failed connecting to %s, error: %s\n", peer.ID, err)
+			} else {
+				fmt.Println("Connected to:", peer.ID)
+				anyConnected = true
+			}
+		}
+	}
+	fmt.Println("Peer discovery complete")
 }
 
 // CreateFiles will import the jsonld files in the data folder and create individual cbor encoded files for every line (parsed bmap tx)

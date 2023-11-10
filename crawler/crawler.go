@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -282,7 +283,6 @@ func processTx(bmapData *bmap.Tx) {
 		bsonData["Ord"] = bmapData.Ord
 	}
 
-	bitcoinSchemaTypes := []string{"friend", "like", "repost", "post", "message"}
 	if bmapData.B != nil {
 		for _, b := range bmapData.B {
 			// remove the data if its not a message
@@ -290,7 +290,7 @@ func processTx(bmapData *bmap.Tx) {
 			// only if this is a bitcoinschema type, do we keep the data
 			// TODO: Allow user to select the types they want to index fully
 			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != nil {
-				if !slices.Contains(bitcoinSchemaTypes, fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
+				if !slices.Contains(strings.Split(config.OutpoutTypes, ","), fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
 					b.Data.UTF8 = ""
 				}
 			} else {
