@@ -14,7 +14,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libsv/go-bk/wif"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -82,22 +81,24 @@ func Start() {
 
 // getPrivateKeyFromEnv loads the WIF-encoded private key from the environment variable and converts it to a libp2p private key
 func getPrivateKeyFromEnv(envVar string) (crypto.PrivKey, error) {
-	wifStr := os.Getenv(envVar)
-	if wifStr == "" {
-		return nil, fmt.Errorf("%s environment variable is not set", envVar)
-	}
+	// wifStr := os.Getenv(envVar)
+	// if wifStr == "" {
+	// 	return nil, fmt.Errorf("%s environment variable is not set", envVar)
+	// }
 
-	decodedWIF, err := wif.DecodeWIF(wifStr)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding WIF: %s", err)
-	}
+	// decodedWIF, err := wif.DecodeWIF(wifStr)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error decoding WIF: %s", err)
+	// }
 
-	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(decodedWIF.PrivKey.Serialise())
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling private key: %s", err)
-	}
+	// privKey, err := crypto.UnmarshalSecp256k1PrivateKey(decodedWIF.PrivKey.Serialise())
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error unmarshaling private key: %s", err)
+	// }
 
-	return privKey, nil
+	// return privKey, nil
+	priv, _, _ := crypto.GenerateKeyPair(crypto.Secp256k1, 256)
+	return priv, nil
 }
 
 func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiaddr, error) {
