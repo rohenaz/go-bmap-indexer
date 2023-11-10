@@ -45,8 +45,7 @@ func Start() {
 
 	h, err := libp2p.New(
 		libp2p.Identity(privKey),
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0", "/ip4/0.0.0.0/udp/0/quic-v1", "/ip6/::/tcp/0",
-			"/ip6/::/udp/0/quic-v1"),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/11169", "/ip6/::/tcp/11169"),
 	)
 	if err != nil {
 		log.Fatalf("Error creating libp2p host: %s", err)
@@ -55,7 +54,7 @@ func Start() {
 	bootstrapPeerID := os.Getenv("BOOTSTRAP_PEER_ID")
 	if bootstrapPeerID != "" {
 		// Attempt to connect to the bootstrap node
-		bootstrapPeers, err := resolveBootstrapPeers("go-bmap-indexer-production.up.railway.app", 11169, bootstrapPeerID)
+		bootstrapPeers, err := resolveBootstrapPeers("viaduct.proxy.rlwy.net", 49648, bootstrapPeerID)
 		if err != nil {
 			log.Fatalf("Error resolving bootstrap peers: %s", err)
 		}
@@ -111,13 +110,10 @@ func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiad
 		var addrStr string
 		if ip.To4() != nil {
 			// IPv4 address
-			// addrStr = fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
-			// /ip4/192.0.2.0/udp/65432/quic-v1/
-			addrStr = fmt.Sprintf("/ip4/%s/udp/%d/quic-v1/p2p/%s", ip.String(), port, peerID)
+			addrStr = fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
 		} else {
 			// IPv6 address
-			// addrStr = fmt.Sprintf("/ip6/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
-			addrStr = fmt.Sprintf("/ip6/%s/udp/%d/quic-v1/p2p/%s", ip.String(), port, peerID)
+			addrStr = fmt.Sprintf("/ip6/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
 		}
 		ma, err := ma.NewMultiaddr(addrStr)
 		if err != nil {
