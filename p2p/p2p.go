@@ -32,7 +32,6 @@ import (
 	mh "github.com/multiformats/go-multihash"
 	"github.com/rohenaz/go-bmap-indexer/cache"
 	"github.com/rohenaz/go-bmap-indexer/config"
-	"github.com/rohenaz/go-bmap-indexer/persist"
 	"github.com/ttacon/chalk"
 )
 
@@ -40,6 +39,9 @@ var Started = false
 var ReadyBlock uint32
 var kademliaDHT *dht.IpfsDHT
 var namespace = "bmap"
+
+// mutex
+var mu sync.Mutex
 
 // Node represents a node in the P2P network
 type Node struct {
@@ -137,7 +139,8 @@ func Start() {
 
 	// loop over config.OutputTypes and subscribe to each topic
 	for _, topic := range strings.Split(config.OutputTypes, ",") {
-		go discoverPeers(ctx, h, &topic)
+		topicName := topic
+		go discoverPeers(ctx, h, &topicName)
 	}
 
 	// define protocol
@@ -273,7 +276,7 @@ func discoverPeers(ctx context.Context, h host.Host, topicName *string) {
 	// Look for others who have announced and attempt to connect to them
 	anyConnected := false
 	for !anyConnected {
-		fmt.Println("Searching for peers...")
+		fmt.Println("Searching for peers on topic:", *topicName)
 		peerChan, err := routingDiscovery.FindPeers(ctx, *topicName)
 		if err != nil {
 			panic(err)
@@ -294,8 +297,12 @@ func discoverPeers(ctx context.Context, h host.Host, topicName *string) {
 	fmt.Println("Peer discovery complete")
 }
 
-// CreateFiles will import the jsonld files in the data folder and create individual cbor encoded files for every line (parsed bmap tx)
-func CreateFiles() {
+// CreateContentCache will import the jsonld files in the data folder and create individual cbor encoded files for every line (parsed bmap tx)
+func CreateContentCache() {
+	// mutex
+	mu.Lock()
+	defer mu.Unlock()
+
 	Started = true
 	cache.Connect()
 	fmt.Println("Preparing data...")
@@ -334,7 +341,7 @@ func importFile(file string, height string) {
 	// start the workers
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		go worker(ch, &wg, height)
+		go worker(ch, &wg)
 	}
 
 	// read the file
@@ -352,10 +359,28 @@ func importFile(file string, height string) {
 
 	// wait for the workers to finish
 	wg.Wait()
+
+	// delete the json file ONLY IF it is not the "highest" file
+	// convert height to uint32
+
+	heightNum, err := strconv.ParseUint(height, 10, 32)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if uint32(heightNum) <= ReadyBlock {
+		fmt.Printf("%sDeleting file in p2p worker %s%s\n", chalk.Cyan, height+".json", chalk.Reset)
+
+		err := os.Remove("./data/" + height + ".json")
+		if err != nil {
+			fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", height+".json", err, chalk.Reset)
+		}
+	}
 }
 
-func worker(ch chan LineData, wg *sync.WaitGroup, height string) {
+func worker(ch chan LineData, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	for lineData := range ch {
 		// Process the line with the block height
 		txid, cid, err := processLine(lineData.Line, lineData.Height)
@@ -371,25 +396,6 @@ func worker(ch chan LineData, wg *sync.WaitGroup, height string) {
 		if cid == nil {
 			log.Println("cid is nil")
 			continue
-		}
-	}
-
-	// delete the json file ONLY IF it is not the "highest" file
-	// convert height to uint32
-
-	heightNum, err := strconv.ParseUint(height, 10, 32)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if uint32(heightNum) <= ReadyBlock && heightNum != 0 {
-
-		// TODO: We need to handle 0 case which is mempool
-		fmt.Printf("%sDeleting file in p2p worker %s%s\n", chalk.Cyan, height+".json", chalk.Reset)
-
-		err := os.Remove("./data/" + height + ".json")
-		if err != nil {
-			fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", height+".json", err, chalk.Reset)
 		}
 	}
 
@@ -415,10 +421,10 @@ func processLine(line []byte, height string) (txid *string, cid *cid.Cid, err er
 	txh := tx.Tx.Tx.H
 	txid = &txh
 
-	filePath := fmt.Sprintf("./data/%s/%s.cbor", height, *txid)
-	persist.SaveCBOR(filePath, cborData)
+	// filePath := fmt.Sprintf("./data/%s/%s.cbor", height, *txid)
+	// persist.SaveCBOR(filePath, cborData)
 
-	log.Printf("Saved CBOR file: %s", filePath)
+	// log.Printf("Saved CBOR file: %s", filePath)
 
 	cid, err = GenerateCID(cborData)
 	if err != nil {

@@ -38,7 +38,7 @@ func eventListener(subscription *junglebus.Subscription) {
 				log.Printf("%sWaiting for new blocks%s\n", chalk.Green, chalk.Reset)
 				if config.EnableP2P && !p2p.Started {
 					// convert jsonld files to individual cbor files suitable for p2p transmission
-					p2p.CreateFiles()
+					p2p.CreateContentCache()
 					go p2p.Start()
 				}
 				continue
@@ -67,7 +67,7 @@ func ProcessDone() {
 			if txCount > 0 {
 				processBlockDoneEvent(height, txCount)
 				if config.EnableP2P {
-					p2p.CreateFiles()
+					p2p.CreateContentCache()
 				}
 			}
 			break
