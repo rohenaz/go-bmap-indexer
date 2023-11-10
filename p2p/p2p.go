@@ -32,7 +32,11 @@ type Node struct {
 func Start() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file")
+		if os.Getenv("ENVIROMENT") == "development" {
+			log.Fatal(err)
+		}
+
 	}
 
 	privKey, err := getPrivateKeyFromEnv("BMAP_P2P_PK")
