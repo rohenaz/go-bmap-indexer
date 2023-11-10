@@ -7,7 +7,17 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/fxamacker/cbor"
 )
+
+var MarshalCBOR = func(v interface{}) (io.Reader, error) {
+	b, err := cbor.Marshal(v, cbor.EncOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
+}
 
 // Marshal is a function that marshals the object into an
 // io.Reader.
@@ -69,6 +79,31 @@ func SaveLine(path string, v interface{}) error {
 
 	// Write a newline after each piece of data to make it NDJSON format
 	_, err = f.WriteString("\n")
+	return err
+}
+
+func SaveCBOR(path string, v interface{}) error {
+	lock.Lock()
+	defer lock.Unlock()
+
+	// Construct the full path
+	fullPath := filepath.Join(path)
+	dir := filepath.Dir(fullPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	f, err := os.Create(fullPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	r, err := MarshalCBOR(v)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(f, r)
 	return err
 }
 

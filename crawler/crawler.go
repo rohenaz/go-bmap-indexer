@@ -14,6 +14,7 @@ import (
 	"github.com/bitcoinschema/go-bmap"
 	"github.com/libsv/go-bt/v2"
 	"github.com/rohenaz/go-bmap-indexer/config"
+	"github.com/rohenaz/go-bmap-indexer/p2p"
 	"github.com/rohenaz/go-bmap-indexer/persist"
 	"github.com/rohenaz/go-bmap-indexer/state"
 	"github.com/ttacon/chalk"
@@ -223,6 +224,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 	ingest(filename)
 	state.SaveProgress(height)
 	if config.DeleteAfterIngest {
+		fmt.Printf("%sDeleting file in crawler %s%s\n", chalk.Cyan, filename, chalk.Reset)
 		err := os.Remove(filename)
 		if err != nil {
 			fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", filename, err, chalk.Reset)
@@ -231,10 +233,10 @@ func processBlockDoneEvent(height uint32, count uint32) {
 
 	// log ingestions in green using chalk
 	log.Printf("%sIngested %d txs from block %d%s", chalk.Cyan, count, height, chalk.Reset)
-}
 
-func processWaitingEvent(height uint32) {
-	log.Printf("%sWaiting for block %d%s", chalk.Cyan, height, chalk.Reset)
+	if config.EnableP2P {
+		p2p.ReadyBlock = height
+	}
 }
 
 func processTx(bmapData *bmap.Tx) {

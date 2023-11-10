@@ -8,5 +8,6 @@ const (
 	JunglebusEndpoint = "https://prod.junglebus.gorillapool.io/"
 	FromBlock         = 817000 // "Welcome to the Future" post = 574287
 	BockSyncRetries   = 5      // number of retries before block is marked failed
-	DeleteAfterIngest = true   // delete json data files after ingesting to db
+	DeleteAfterIngest = false  // delete json data files after ingesting to db. If using p2p this will effective disable seeding (jerk)
+	EnableP2P         = true   // enable p2p layer
 )

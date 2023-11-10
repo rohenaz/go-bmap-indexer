@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/GorillaPool/go-junglebus"
+	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/rohenaz/go-bmap-indexer/p2p"
 	"github.com/ttacon/chalk"
 )
@@ -35,7 +36,9 @@ func eventListener(subscription *junglebus.Subscription) {
 				continue
 			case "waiting":
 				log.Printf("%sWaiting for new blocks%s\n", chalk.Green, chalk.Reset)
-				if !p2p.Started {
+				if config.EnableP2P && !p2p.Started {
+					// convert jsonld files to individual cbor files suitable for p2p transmission
+					p2p.CreateFiles()
 					go p2p.Start()
 				}
 				continue
@@ -63,7 +66,9 @@ func ProcessDone() {
 		for height, txCount := range heightMap {
 			if txCount > 0 {
 				processBlockDoneEvent(height, txCount)
-
+				if config.EnableP2P {
+					p2p.CreateFiles()
+				}
 			}
 			break
 		}

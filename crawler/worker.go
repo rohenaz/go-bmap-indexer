@@ -24,6 +24,7 @@ func Worker(readyFiles chan string) {
 
 		// After successful import, delete the file
 		if config.DeleteAfterIngest {
+			fmt.Printf("%sDeleting file in crawler worker %s%s\n", chalk.Cyan, filename, chalk.Reset)
 			err := os.Remove(filename)
 			if err != nil {
 				fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", filename, err, chalk.Reset)

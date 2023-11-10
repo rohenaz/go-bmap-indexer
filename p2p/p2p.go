@@ -3,11 +3,18 @@ package p2p
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"strconv"
+	"strings"
+	"sync"
 
+	"github.com/bitcoinschema/go-bmap"
+	"github.com/fxamacker/cbor"
+	"github.com/ipfs/go-cid"
 	"github.com/joho/godotenv"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -22,9 +29,17 @@ import (
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
 	"github.com/libsv/go-bk/wif"
 	ma "github.com/multiformats/go-multiaddr"
+	mc "github.com/multiformats/go-multicodec"
+	mh "github.com/multiformats/go-multihash"
+	"github.com/rohenaz/go-bmap-indexer/cache"
+	"github.com/rohenaz/go-bmap-indexer/persist"
+	"github.com/ttacon/chalk"
 )
 
 var Started = false
+var ReadyBlock uint32
+var kademliaDHT *dht.IpfsDHT
+var namespace = "bmap"
 
 // Node represents a node in the P2P network
 type Node struct {
@@ -32,6 +47,11 @@ type Node struct {
 	DHT    *dht.IpfsDHT
 	PubSub *pubsub.PubSub
 	Ctx    context.Context
+}
+
+type LineData struct {
+	Line   []byte
+	Height string
 }
 
 func readData(rw *bufio.ReadWriter) {
@@ -158,13 +178,13 @@ func Start() {
 			}
 
 			routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
-			dutil.Advertise(ctx, routingDiscovery, "Hola world!")
+			dutil.Advertise(ctx, routingDiscovery, namespace)
 			log.Println("Successfully announced!")
 
 			// Now, look for others who have announced
 			// This is like your friend telling you the location to meet you.
 			log.Println("Searching for other peers...")
-			peerChan, err := routingDiscovery.FindPeers(ctx, "Hola world!")
+			peerChan, err := routingDiscovery.FindPeers(ctx, namespace)
 			if err != nil {
 				panic(err)
 			}
@@ -191,15 +211,164 @@ func Start() {
 				log.Println("Connected to:", peer)
 			}
 
+			// announce what we have
+
+			//			log.Println("Announcing CID:", cid.String())
+			// create a cid from these bytes
+			//		kademliaDHT.Provide(context.Background(), *cid, true)
+
 			select {}
 		}
 	} else {
 		log.Println("No bootstrap peer ID provided")
 	}
 
-	Started = true
-
 	log.Println("Node started with ID:", h.ID(), "and addresses: ", h.Addrs())
+
+	// empty channel
+	<-make(chan struct{})
+}
+
+// CreateFiles will import the jsonld files in the data folder and create individual cbor encoded files for every line (parsed bmap tx)
+func CreateFiles() {
+	Started = true
+	cache.Connect()
+	fmt.Println("Preparing data...")
+
+	// Get files from ./data directory
+	files, err := os.ReadDir("./data")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".json") {
+			log.Println("Importing file:", file.Name())
+			height := strings.Split(file.Name(), ".")[0]
+			importFile("./data/"+file.Name(), height)
+		}
+	}
+}
+
+func importFile(file string, height string) {
+	// open the file
+	f, err := os.Open(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	// create a scanner
+	scanner := bufio.NewScanner(f)
+
+	// create a channel
+	ch := make(chan LineData, 1000)
+
+	// create a waitgroup
+	var wg sync.WaitGroup
+
+	// start the workers
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go worker(ch, &wg, height)
+	}
+
+	// read the file
+	for scanner.Scan() {
+		line := make([]byte, len(scanner.Bytes()))
+
+		// prevent race conditions by copying
+		copy(line, scanner.Bytes())
+
+		ch <- LineData{Line: line, Height: height}
+	}
+
+	// close the channel
+	close(ch)
+
+	// wait for the workers to finish
+	wg.Wait()
+}
+
+func worker(ch chan LineData, wg *sync.WaitGroup, height string) {
+	defer wg.Done()
+	for lineData := range ch {
+		// Process the line with the block height
+		txid, cid, err := processLine(lineData.Line, lineData.Height)
+		if err != nil {
+			log.Println(err)
+		}
+
+		if txid == nil {
+			log.Println("txid is nil")
+			continue
+		}
+
+		if cid == nil {
+			log.Println("cid is nil")
+			continue
+		}
+	}
+
+	// delete the json file ONLY IF it is not the "highest" file
+	// convert height to uint32
+
+	heightNum, err := strconv.ParseUint(height, 10, 32)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if uint32(heightNum) <= ReadyBlock && heightNum != 0 {
+
+		// TODO: We need to handle 0 case which is mempool
+		fmt.Printf("%sDeleting file in p2p worker %s%s\n", chalk.Cyan, height+".json", chalk.Reset)
+
+		err := os.Remove("./data/" + height + ".json")
+		if err != nil {
+			fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", height+".json", err, chalk.Reset)
+		}
+	}
+
+}
+
+func processLine(line []byte, height string) (txid *string, cid *cid.Cid, err error) {
+	var tx bmap.Tx
+	// Assuming line is a JSON object, unmarshal it into a map
+	if err := json.Unmarshal(line, &tx); err != nil {
+		log.Println("Error unmarshaling line:", err)
+		return nil, nil, err
+	}
+
+	// Encode the map to CBOR
+	cborData, err := cbor.Marshal(tx, cbor.EncOptions{})
+	if err != nil {
+		log.Println("Error encoding to CBOR:", err)
+		return nil, nil, err
+	}
+
+	// Write cborData to a file in data/<height>/<txid>.cbor
+	// makea copy
+	txh := tx.Tx.Tx.H
+	txid = &txh
+
+	filePath := fmt.Sprintf("./data/%s/%s.cbor", height, *txid)
+	persist.SaveCBOR(filePath, cborData)
+
+	log.Printf("Saved CBOR file: %s", filePath)
+
+	cid, err = GenerateCID(cborData)
+	if err != nil {
+		log.Println("Error generating CID:", err)
+		return nil, nil, err
+	}
+
+	// announce availability on the DHT
+	// https://github.com/libp2p/go-libp2p/blob/master/examples/chat-with-rendezvous/chat.go
+	err = cache.Set("p2p-bmap-"+height+"-"+*txid, cid.String())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return txid, cid, nil
 }
 
 // getPrivateKeyFromEnv loads the WIF-encoded private key from the environment variable and converts it to a libp2p private key
@@ -246,4 +415,25 @@ func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiad
 		peers = append(peers, ma)
 	}
 	return peers, nil
+}
+
+func GenerateCID(content []byte) (contentID *cid.Cid, err error) {
+
+	// Create a cid manually by specifying the 'prefix' parameters
+	pref := cid.Prefix{
+		Version:  1,
+		Codec:    uint64(mc.Raw),
+		MhType:   mh.SHA2_256,
+		MhLength: -1, // default length
+	}
+
+	// And then feed it some data
+	c, err := pref.Sum(content)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Created CID: ", c)
+
+	return &c, nil
 }
