@@ -45,8 +45,8 @@ func Start() {
 
 	h, err := libp2p.New(
 		libp2p.Identity(privKey),
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0", "/ip6/::/tcp/11169",
-			"/ip6/::/udp/11169/quic"),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0", "/ip4/0.0.0.0/udp/11169/quic-v1", "/ip6/::/tcp/11169",
+			"/ip6/::/udp/11169/quic-v1"),
 	)
 	if err != nil {
 		log.Fatalf("Error creating libp2p host: %s", err)
@@ -113,11 +113,11 @@ func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiad
 			// IPv4 address
 			// addrStr = fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
 			// /ip4/192.0.2.0/udp/65432/quic-v1/
-			addrStr = fmt.Sprintf("/ip4/%s/udp/%d/quic/p2p/%s", ip.String(), port, peerID)
+			addrStr = fmt.Sprintf("/ip4/%s/udp/%d/quic-v1/p2p/%s", ip.String(), port, peerID)
 		} else {
 			// IPv6 address
 			// addrStr = fmt.Sprintf("/ip6/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
-			addrStr = fmt.Sprintf("/ip6/%s/udp/%d/quic/p2p/%s", ip.String(), port, peerID)
+			addrStr = fmt.Sprintf("/ip6/%s/udp/%d/quic-v1/p2p/%s", ip.String(), port, peerID)
 		}
 		ma, err := ma.NewMultiaddr(addrStr)
 		if err != nil {
