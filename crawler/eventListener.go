@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/GorillaPool/go-junglebus"
+	"github.com/rohenaz/go-bmap-indexer/p2p"
 	"github.com/ttacon/chalk"
 )
 
@@ -32,6 +33,12 @@ func eventListener(subscription *junglebus.Subscription) {
 				log.Printf("%sConnected to Junglebus%s\n", chalk.Green, chalk.Reset)
 
 				continue
+			case "waiting":
+				log.Printf("%sWaiting for new blocks%s\n", chalk.Green, chalk.Reset)
+				if !p2p.Started {
+					go p2p.Start()
+				}
+				continue
 			case "block-done":
 				// copy the var
 				var count = txCount
@@ -56,6 +63,7 @@ func ProcessDone() {
 		for height, txCount := range heightMap {
 			if txCount > 0 {
 				processBlockDoneEvent(height, txCount)
+
 			}
 			break
 		}

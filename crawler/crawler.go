@@ -231,7 +231,10 @@ func processBlockDoneEvent(height uint32, count uint32) {
 
 	// log ingestions in green using chalk
 	log.Printf("%sIngested %d txs from block %d%s", chalk.Cyan, count, height, chalk.Reset)
+}
 
+func processWaitingEvent(height uint32) {
+	log.Printf("%sWaiting for block %d%s", chalk.Cyan, height, chalk.Reset)
 }
 
 func processTx(bmapData *bmap.Tx) {
