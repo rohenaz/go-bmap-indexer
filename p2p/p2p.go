@@ -423,7 +423,7 @@ func GenerateCID(content []byte) (contentID *cid.Cid, err error) {
 	pref := cid.Prefix{
 		Version:  1,
 		Codec:    uint64(mc.Raw),
-		MhType:   mh.SHA2_256,
+		MhType:   mh.DBL_SHA2_256,
 		MhLength: -1, // default length
 	}
 

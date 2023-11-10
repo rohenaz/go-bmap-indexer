@@ -4,12 +4,15 @@ go 1.19
 
 require (
 	github.com/GorillaPool/go-junglebus v0.2.10
-	github.com/bitcoinschema/go-bmap v0.1.4
+	github.com/bitcoinschema/go-bmap v0.1.5
+	github.com/ipfs/go-cid v0.4.1
 	github.com/joho/godotenv v1.5.1
 	github.com/libp2p/go-libp2p v0.32.1
 	github.com/libp2p/go-libp2p-kad-dht v0.25.1
 	github.com/libp2p/go-libp2p-pubsub v0.10.0
 	github.com/multiformats/go-multiaddr v0.12.0
+	github.com/multiformats/go-multicodec v0.9.0
+	github.com/multiformats/go-multihash v0.2.3
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	go.mongodb.org/mongo-driver v1.12.1
 )
@@ -17,6 +20,8 @@ require (
 require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bitcoinschema/go-bitcoin/v2 v2.0.5 // indirect
+	github.com/bitcoinschema/go-sigma v0.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
@@ -42,7 +47,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.5 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/ipfs/boxo v0.10.0 // indirect
-	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-datastore v0.6.0 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
@@ -77,8 +81,6 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.2.0 // indirect
-	github.com/multiformats/go-multicodec v0.9.0 // indirect
-	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-multistream v0.5.0 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.0 // indirect
