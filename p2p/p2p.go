@@ -45,7 +45,8 @@ func Start() {
 
 	h, err := libp2p.New(
 		libp2p.Identity(privKey),
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0", "/ip6/::/tcp/11169",
+			"/ip6/::/udp/11169/quic"),
 	)
 	if err != nil {
 		log.Fatalf("Error creating libp2p host: %s", err)
