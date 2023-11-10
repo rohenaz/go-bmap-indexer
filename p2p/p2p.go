@@ -111,10 +111,13 @@ func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiad
 		var addrStr string
 		if ip.To4() != nil {
 			// IPv4 address
-			addrStr = fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
+			// addrStr = fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
+			// /ip4/192.0.2.0/udp/65432/quic-v1/
+			addrStr = fmt.Sprintf("/ip4/%s/udp/%d/quic/p2p/%s", ip.String(), port, peerID)
 		} else {
 			// IPv6 address
-			addrStr = fmt.Sprintf("/ip6/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
+			// addrStr = fmt.Sprintf("/ip6/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
+			addrStr = fmt.Sprintf("/ip6/%s/udp/%d/quic/p2p/%s", ip.String(), port, peerID)
 		}
 		ma, err := ma.NewMultiaddr(addrStr)
 		if err != nil {
