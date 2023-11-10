@@ -138,9 +138,24 @@ func Start() {
 	}
 
 	// loop over config.OutputTypes and subscribe to each topic
-	for _, topic := range strings.Split(config.OutputTypes, ",") {
-		topicName := topic
+	for _, topicName := range strings.Split(config.OutputTypes, ",") {
 		go discoverPeers(ctx, h, &topicName)
+
+		ps, err := pubsub.NewGossipSub(ctx, h)
+		if err != nil {
+			panic(err)
+		}
+		topic, err := ps.Join(topicName)
+		if err != nil {
+			panic(err)
+		}
+		go streamConsoleTo(ctx, topic)
+
+		sub, err := topic.Subscribe()
+		if err != nil {
+			panic(err)
+		}
+		printMessagesFrom(ctx, sub)
 	}
 
 	// define protocol
@@ -299,7 +314,7 @@ func discoverPeers(ctx context.Context, h host.Host, topicName *string) {
 
 // CreateContentCache will import the jsonld files in the data folder and create individual cbor encoded files for every line (parsed bmap tx)
 func CreateContentCache() {
-	// mutex
+	// mutex prevents race conditions
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -507,4 +522,27 @@ func GenerateCID(content []byte) (contentID *cid.Cid, err error) {
 	fmt.Println("Created CID: ", c)
 
 	return &c, nil
+}
+
+func streamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		s, err := reader.ReadString('\n')
+		if err != nil {
+			panic(err)
+		}
+		if err := topic.Publish(ctx, []byte(s)); err != nil {
+			fmt.Println("### Publish error:", err)
+		}
+	}
+}
+
+func printMessagesFrom(ctx context.Context, sub *pubsub.Subscription) {
+	for {
+		m, err := sub.Next(ctx)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(m.ReceivedFrom, ": ", string(m.Message.Data))
+	}
 }
