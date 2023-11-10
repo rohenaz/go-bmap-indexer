@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libsv/go-bk/wif"
+	ma "github.com/multiformats/go-multiaddr"
 )
 
 var Started = false
@@ -43,10 +44,15 @@ func Start() {
 		return
 	}
 
+	// how do i use "https://go-bmap-indexer-production.up.railway.app/" ?
+	var port = 11169
+	listen, _ := ma.NewMultiaddr(fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", port))
+
 	h, err := libp2p.New(
 		libp2p.Identity(privKey),
 		libp2p.ListenAddrStrings("/ip4/0.0.0.0/udp/0/quic", "/ip4/0.0.0.0/tcp/0", "/ip6/::/quic", "/ip6/::/tcp/0"),
 		libp2p.DefaultTransports,
+		libp2p.ListenAddrs(listen),
 	)
 	if err != nil {
 		log.Fatalf("Error creating libp2p host: %s", err)
@@ -74,7 +80,7 @@ func Start() {
 
 	// Implement your custom protocol handlers and pubsub subscription handlers here.
 
-	log.Println("Node started with ID:", node.Host.ID().ShortString())
+	log.Println("Node started. Listening on addresses", node.Host.Addrs())
 }
 
 // getPrivateKeyFromEnv loads the WIF-encoded private key from the environment variable and converts it to a libp2p private key
