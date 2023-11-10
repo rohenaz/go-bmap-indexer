@@ -28,10 +28,13 @@ type Node struct {
 // Start initializes the P2P node and connects it to the network
 func Start() {
 
-	// TODO: Move to main
+	// make this environment specific
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("No .env file loaded")
+		if os.Getenv("ENVIRONMENT") == "development" {
+			log.Fatal(err)
+		}
 	}
 
 	privKey, err := getPrivateKeyFromEnv("BMAP_P2P_PK")
