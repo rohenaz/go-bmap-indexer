@@ -32,11 +32,10 @@ type Node struct {
 func Start() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Error loading .env file")
+		log.Println("No .env file loaded")
 		if os.Getenv("ENVIROMENT") == "development" {
 			log.Fatal(err)
 		}
-
 	}
 
 	privKey, err := getPrivateKeyFromEnv("BMAP_P2P_PK")
@@ -52,22 +51,27 @@ func Start() {
 		log.Fatalf("Error creating libp2p host: %s", err)
 	}
 
-	// Attempt to connect to the bootstrap node
-	bootstrapPeers, err := resolveBootstrapPeers("go-bmap-indexer-production.up.railway.app", 11169)
-	if err != nil {
-		log.Fatalf("Error resolving bootstrap peers: %s", err)
-	}
-
-	for _, peerAddr := range bootstrapPeers {
-		log.Println("Attempting to connect to bootstrap peer:", peerAddr)
-		peerInfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
+	bootstrapPeerID := os.Getenv("BOOTSTRAP_PEER_ID")
+	if bootstrapPeerID != "" {
+		// Attempt to connect to the bootstrap node
+		bootstrapPeers, err := resolveBootstrapPeers("go-bmap-indexer-production.up.railway.app", 11169, bootstrapPeerID)
 		if err != nil {
-			log.Println("Error creating AddrInfo:", err)
-			continue
+			log.Fatalf("Error resolving bootstrap peers: %s", err)
 		}
-		if err := h.Connect(context.Background(), *peerInfo); err != nil {
-			log.Println("Error connecting to bootstrap peer:", err)
+
+		for _, peerAddr := range bootstrapPeers {
+			log.Println("Attempting to connect to bootstrap peer:", peerAddr)
+			peerInfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
+			if err != nil {
+				log.Println("Error creating AddrInfo:", err)
+				continue
+			}
+			if err := h.Connect(context.Background(), *peerInfo); err != nil {
+				log.Println("Error connecting to bootstrap peer:", err)
+			}
 		}
+	} else {
+		log.Println("No bootstrap peer ID provided")
 	}
 
 	Started = true
@@ -96,15 +100,15 @@ func getPrivateKeyFromEnv(envVar string) (crypto.PrivKey, error) {
 }
 
 // resolveBootstrapPeers resolves the DNS and returns a slice of multiaddresses for the bootstrap nodes
-func resolveBootstrapPeers(url string, port int) ([]ma.Multiaddr, error) {
-	ips, err := net.LookupIP(url)
+func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiaddr, error) {
+	ips, err := net.LookupIP(domain)
 	if err != nil {
 		return nil, err
 	}
 
 	var peers []ma.Multiaddr
 	for _, ip := range ips {
-		addrStr := fmt.Sprintf("/ip4/%s/tcp/%d", ip.String(), port)
+		addrStr := fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
 		ma, err := ma.NewMultiaddr(addrStr)
 		if err != nil {
 			log.Println("Error creating multiaddress for IP:", ip.String(), err)
