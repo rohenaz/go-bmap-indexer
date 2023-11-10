@@ -100,7 +100,6 @@ func getPrivateKeyFromEnv(envVar string) (crypto.PrivKey, error) {
 	return privKey, nil
 }
 
-// resolveBootstrapPeers resolves the DNS and returns a slice of multiaddresses for the bootstrap nodes
 func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiaddr, error) {
 	ips, err := net.LookupIP(domain)
 	if err != nil {
@@ -109,7 +108,14 @@ func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiad
 
 	var peers []ma.Multiaddr
 	for _, ip := range ips {
-		addrStr := fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
+		var addrStr string
+		if ip.To4() != nil {
+			// IPv4 address
+			addrStr = fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
+		} else {
+			// IPv6 address
+			addrStr = fmt.Sprintf("/ip6/%s/tcp/%d/p2p/%s", ip.String(), port, peerID)
+		}
 		ma, err := ma.NewMultiaddr(addrStr)
 		if err != nil {
 			log.Println("Error creating multiaddress for IP:", ip.String(), err)
