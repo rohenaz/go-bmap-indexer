@@ -10,7 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// SaveProgress persists the block height to ./block.tmp
+// TODO: This should use redis instead of mongo
+
+// SaveProgress persists the block height to the database
 func SaveProgress(height uint32) {
 	if height > 0 {
 
@@ -28,7 +30,7 @@ func SaveProgress(height uint32) {
 
 }
 
-// LoadProgress loads the block height from ./block.tmp
+// LoadProgress loads the block height from the database
 func LoadProgress() (height uint32) {
 
 	// load height from _state collection
