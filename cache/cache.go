@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/ttacon/chalk"
 )
 
@@ -38,6 +38,12 @@ func Connect() {
 	rdb = redis.NewClient(opts)
 	fmt.Printf("%sConnecting to Redis cache%s\n", cacheChalk, chalk.Reset)
 
+	_, err = rdb.Ping(ctx).Result()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%sRedis cache pinged%s\n", cacheChalk, chalk.Reset)
 }
 
 // Set a value in Redis

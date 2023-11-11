@@ -132,7 +132,6 @@ require (
 	github.com/centrifugal/protocol v0.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/fxamacker/cbor v1.5.1
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -144,6 +143,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/redis/go-redis/v9 v9.3.0
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/segmentio/encoding v0.3.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
