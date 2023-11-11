@@ -1,6 +1,5 @@
 .DS_Store
 block.tmp
-.docker_build
 data/*
 data.zip
 .env

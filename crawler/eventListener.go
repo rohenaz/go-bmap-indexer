@@ -71,9 +71,9 @@ func ProcessDone() {
 		for height, txCount := range heightMap {
 			if txCount > 0 {
 				processBlockDoneEvent(height, txCount)
-				if config.EnableP2P {
-					// p2p.CreateContentCache()
-				}
+				//if config.EnableP2P {
+				// p2p.CreateContentCache()
+				//}
 			}
 			break
 		}
