@@ -110,7 +110,7 @@ func Crawl(height int) (newHeight int) {
 		},
 		// Mempool tx callback
 		OnMempool: func(tx *models.TransactionResponse) {
-			log.Printf("[MEM]: %d: %v", tx.BlockHeight, tx.Id)
+			// log.Printf("[MEM]: %d: %v", tx.BlockHeight, tx.Id)
 
 			eventChannel <- &Event{
 				Type:        "mempool",
@@ -196,20 +196,21 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 	}
 }
 
-func processMempoolEvent(rawtx []byte) {
-
+func processMempoolEvent(rawtx []byte) (path string, height uint32, err error) {
 	t, err := bt.NewTxFromBytes(rawtx)
 	if err != nil {
-		log.Printf("[ERROR]: %v", err)
-		return
+		return "", 0, err
 	}
 	bmapTx, err := bmap.NewFromTx(t)
 	if err != nil {
-		log.Printf("[ERROR]: %v", err)
-		return
+		return "", bmapTx.Blk.I, err
 	}
-	log.Printf("[MEMPOOL BMAP]: %d: %s", bmapTx.Blk.I, bmapTx.Tx.Tx.H)
-	processTx(bmapTx)
+	path, err = processTx(bmapTx)
+	if err != nil {
+		return "", bmapTx.Blk.I, err
+	}
+
+	return path, bmapTx.Blk.I, nil
 }
 
 func processBlockDoneEvent(height uint32, count uint32) {
@@ -240,7 +241,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 	}
 }
 
-func processTx(bmapData *bmap.Tx) {
+func processTx(bmapData *bmap.Tx) (path string, err error) {
 
 	// delete input.Tape from the inputs and outputs
 	for i := range bmapData.Tx.In {
@@ -334,10 +335,13 @@ func processTx(bmapData *bmap.Tx) {
 		}
 	}
 
+	path = fmt.Sprintf("data/%d.json", bmapData.Blk.I)
 	// 	Write to local filesystem
-	err := persist.SaveLine(fmt.Sprintf("data/%d.json", bmapData.Blk.I), bsonData)
+	err = persist.SaveLine(path, bsonData)
 	if err != nil {
 		log.Printf("[WRITE ERROR]: %v", err)
-		return
+		return "", err
 	}
+
+	return path, err
 }

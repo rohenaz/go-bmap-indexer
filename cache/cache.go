@@ -3,23 +3,25 @@ package cache
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"sync"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/ttacon/chalk"
 )
 
 var ctx = context.Background()
 var rdb *redis.Client
 var mu sync.Mutex
 var Connected = false
+var cacheChalk = chalk.Red.NewStyle().WithBackground(chalk.Black)
 
 func onRedisConnect(ctx context.Context, cn *redis.Conn) error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	log.Println("Redis cache connected")
+	fmt.Printf("%sRedis cache connected%s\n", cacheChalk, chalk.Reset)
 	Connected = true
 	return nil
 }
@@ -29,7 +31,7 @@ func Connect() {
 		Addr:      os.Getenv("REDIS_PRIVATE_URL"),
 		OnConnect: onRedisConnect,
 	})
-	log.Println("Redis cache initialized")
+	fmt.Printf("%sConnecting to Redis cache%s\n", cacheChalk, chalk.Reset)
 
 }
 

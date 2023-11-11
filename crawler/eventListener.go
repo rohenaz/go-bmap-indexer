@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/GorillaPool/go-junglebus"
@@ -53,7 +54,11 @@ func eventListener(subscription *junglebus.Subscription) {
 				continue
 			}
 		case "mempool":
-			processMempoolEvent(event.Transaction)
+			_, _, err := processMempoolEvent(event.Transaction)
+			if err != nil {
+				fmt.Printf("%s%s%s\n", chalk.Red, err.Error(), chalk.Reset)
+				continue
+			}
 		case "error":
 			log.Printf("%sERROR: %s%s\n", chalk.Green, event.Error.Error(), chalk.Reset)
 		}

@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bitcoinschema/go-bmap"
 	"github.com/fxamacker/cbor"
 	"github.com/ipfs/go-cid"
 	"github.com/joho/godotenv"
@@ -33,15 +32,16 @@ import (
 	"github.com/rohenaz/go-bmap-indexer/cache"
 	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/ttacon/chalk"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
-var Started = false
 var ReadyBlock uint32
 var kademliaDHT *dht.IpfsDHT
 var namespace = "bmap"
 
 // mutex
 var mu sync.Mutex
+var Started = false
 
 // Node represents a node in the P2P network
 type Node struct {
@@ -55,6 +55,8 @@ type LineData struct {
 	Line   []byte
 	Height string
 }
+
+var p2pChalk = chalk.Cyan.NewStyle().WithBackground(chalk.Magenta)
 
 func readData(rw *bufio.ReadWriter) {
 	for {
@@ -141,7 +143,7 @@ func Start() {
 	for _, topicName := range strings.Split(config.OutputTypes, ",") {
 		go discoverPeers(ctx, h, &topicName)
 
-		ps, err := pubsub.NewGossipSub(ctx, h)
+		ps, err := pubsub.NewGossipSub(ctx, h, pubsub.WithPeerExchange(true), pubsub.WithFloodPublish(true))
 		if err != nil {
 			panic(err)
 		}
@@ -320,16 +322,19 @@ func CreateContentCache() {
 
 	Started = true
 	cache.Connect()
-	fmt.Println("Preparing data...")
 
 	// Get files from ./data directory
 	files, err := os.ReadDir("./data")
 	if err != nil {
 		log.Fatal(err)
 	}
+	num := strconv.Itoa(len(files))
+	fmt.Printf("%sInitializing p2p index with %s files ingestion cache.%s\n", p2pChalk, num, chalk.Reset)
 	for _, file := range files {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".json") {
-			log.Println("Importing file:", file.Name())
+
+			fmt.Printf("%sImporting file in p2p worker %s%s\n", p2pChalk, file.Name(), chalk.Reset)
+
 			height := strings.Split(file.Name(), ".")[0]
 			importFile("./data/"+file.Name(), height)
 		}
@@ -337,6 +342,10 @@ func CreateContentCache() {
 }
 
 func importFile(file string, height string) {
+	// mutex
+	mu.Lock()
+	defer mu.Unlock()
+
 	// open the file
 	f, err := os.Open(file)
 	if err != nil {
@@ -384,11 +393,11 @@ func importFile(file string, height string) {
 	}
 
 	if uint32(heightNum) <= ReadyBlock {
-		fmt.Printf("%sDeleting file in p2p worker %s%s\n", chalk.Cyan, height+".json", chalk.Reset)
+		fmt.Printf("%sDeleting file in p2p worker %s%s\n", p2pChalk, height+".json", chalk.Reset)
 
 		err := os.Remove("./data/" + height + ".json")
 		if err != nil {
-			fmt.Printf("%s%s %s: %v%s\n", chalk.Cyan, "Error deleting file", height+".json", err, chalk.Reset)
+			fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error deleting file", height+".json", err, chalk.Reset)
 		}
 	}
 }
@@ -398,9 +407,10 @@ func worker(ch chan LineData, wg *sync.WaitGroup) {
 
 	for lineData := range ch {
 		// Process the line with the block height
-		txid, cid, err := processLine(lineData.Line, lineData.Height)
+		txid, cid, err := ProcessLine(lineData.Line, lineData.Height)
 		if err != nil {
 			log.Println(err)
+			continue
 		}
 
 		if txid == nil {
@@ -416,24 +426,24 @@ func worker(ch chan LineData, wg *sync.WaitGroup) {
 
 }
 
-func processLine(line []byte, height string) (txid *string, cid *cid.Cid, err error) {
-	var tx bmap.Tx
+func ProcessLine(line []byte, height string) (txid *string, cid *cid.Cid, err error) {
+	var tx = &bson.M{}
 	// Assuming line is a JSON object, unmarshal it into a map
-	if err := json.Unmarshal(line, &tx); err != nil {
-		log.Println("Error unmarshaling line:", err)
+	if err := json.Unmarshal(line, tx); err != nil {
+		fmt.Printf("%s%s: %v%s\n", p2pChalk, "Error unmarshaling line", err, chalk.Reset)
 		return nil, nil, err
 	}
 
 	// Encode the map to CBOR
 	cborData, err := cbor.Marshal(tx, cbor.EncOptions{})
 	if err != nil {
-		log.Println("Error encoding to CBOR:", err)
+		fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error encoding to CBOR", line, err, chalk.Reset)
 		return nil, nil, err
 	}
 
 	// Write cborData to a file in data/<height>/<txid>.cbor
 	// makea copy
-	txh := tx.Tx.Tx.H
+	txh := "shucks" // tx.Tx.Tx.H
 	txid = &txh
 
 	// filePath := fmt.Sprintf("./data/%s/%s.cbor", height, *txid)
@@ -443,13 +453,13 @@ func processLine(line []byte, height string) (txid *string, cid *cid.Cid, err er
 
 	cid, err = GenerateCID(cborData)
 	if err != nil {
-		log.Println("Error generating CID:", err)
+		fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error generating CID", line, err, chalk.Reset)
 		return nil, nil, err
 	}
 
 	// announce availability on the DHT
 	// https://github.com/libp2p/go-libp2p/blob/master/examples/chat-with-rendezvous/chat.go
-	err = cache.Set("p2p-bmap-"+height+"-"+*txid, cid.String())
+	err = cache.Set("p2p-bmap-"+height+"-"+txh, cid.String())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -495,7 +505,7 @@ func resolveBootstrapPeers(domain string, port int, peerID string) ([]ma.Multiad
 		}
 		ma, err := ma.NewMultiaddr(addrStr)
 		if err != nil {
-			log.Println("Error creating multiaddress for IP:", ip.String(), err)
+			fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error creating multiaddress for IP", ip.String(), err, chalk.Reset)
 			continue
 		}
 		peers = append(peers, ma)
@@ -532,7 +542,7 @@ func streamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 			panic(err)
 		}
 		if err := topic.Publish(ctx, []byte(s)); err != nil {
-			fmt.Println("### Publish error:", err)
+			fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error publishing to topic", topic, err, chalk.Reset)
 		}
 	}
 }
