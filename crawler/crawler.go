@@ -192,11 +192,11 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 
 		// log.Printf("[BMAP]: %d: %s | Data Length: %d | First 10 bytes: %x", tx.BlockHeight, bmapTx.Tx.Tx.H, len(tx.Transaction), tx.Transaction[:10])
 
-		_, _, err = processTx(bmapTx)
-		if err != nil {
-			log.Printf("[ERROR]: %v", err)
-			return
-		}
+		_, _, _ = processTx(bmapTx)
+		// if err != nil {
+		// 	log.Printf("[ERROR]: %v", err)
+		// 	return
+		// }
 	}
 }
 
@@ -210,17 +210,17 @@ func processMempoolEvent(rawtx []byte) (path string, height uint32, err error) {
 		return "", bmapTx.Blk.I, err
 	}
 	fmt.Printf("%sProcessing mempool tx %s%s\n", chalk.Cyan, bmapTx.Tx.Tx.H, chalk.Reset)
-	path, bsonData, err := processTx(bmapTx)
+	path, _, err = processTx(bmapTx)
 	if err != nil {
 		return "", bmapTx.Blk.I, err
 	}
 
 	// convert to bytes
-	bsonBytes, err := bson.Marshal(bsonData)
-	if err != nil {
-		return "", bmapTx.Blk.I, err
-	}
-	p2p.ProcessLine(bsonBytes, fmt.Sprintf("%d", bmapTx.Blk.I))
+	// bsonBytes, err := bson.Marshal(bsonData)
+	// if err != nil {
+	// 	return "", bmapTx.Blk.I, err
+	// }
+	// p2p.ProcessLine(bsonBytes, fmt.Sprintf("%d", bmapTx.Blk.I))
 
 	return path, bmapTx.Blk.I, nil
 }
