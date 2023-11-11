@@ -155,7 +155,7 @@ func Start() {
 
 		sub, err := topic.Subscribe()
 		if err != nil {
-			panic(err)
+			fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error subscribing to topic", topic, err, chalk.Reset)
 		}
 		printMessagesFrom(ctx, sub)
 	}
