@@ -28,7 +28,7 @@ func onRedisConnect(ctx context.Context, cn *redis.Conn) error {
 
 func Connect() {
 
-	url := os.Getenv("REDIS_PRIVATE_URL")
+	url := os.Getenv("REDIS_URL")
 	opts, err := redis.ParseURL(url)
 	if err != nil {
 		panic(err)

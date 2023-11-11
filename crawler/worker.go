@@ -23,7 +23,8 @@ func Worker(readyFiles chan string) {
 		ingest(filename)
 
 		// After successful import, delete the file
-		if config.DeleteAfterIngest {
+		// in p2p mode, its deleted after saving to redis
+		if config.DeleteAfterIngest && !config.EnableP2P {
 			fmt.Printf("%sDeleting file in crawler worker %s%s\n", chalk.Cyan, filename, chalk.Reset)
 			err := os.Remove(filename)
 			if err != nil {

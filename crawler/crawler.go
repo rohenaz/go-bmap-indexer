@@ -110,7 +110,7 @@ func Crawl(height int) (newHeight int) {
 		},
 		// Mempool tx callback
 		OnMempool: func(tx *models.TransactionResponse) {
-			// log.Printf("[MEM]: %d: %v", tx.BlockHeight, tx.Id)
+			log.Printf("[MEM]: %d: %v", tx.BlockHeight, tx.Id)
 
 			eventChannel <- &Event{
 				Type:        "mempool",
@@ -192,7 +192,11 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 
 		// log.Printf("[BMAP]: %d: %s | Data Length: %d | First 10 bytes: %x", tx.BlockHeight, bmapTx.Tx.Tx.H, len(tx.Transaction), tx.Transaction[:10])
 
-		processTx(bmapTx)
+		_, _, err = processTx(bmapTx)
+		if err != nil {
+			log.Printf("[ERROR]: %v", err)
+			return
+		}
 	}
 }
 
@@ -205,10 +209,18 @@ func processMempoolEvent(rawtx []byte) (path string, height uint32, err error) {
 	if err != nil {
 		return "", bmapTx.Blk.I, err
 	}
-	path, err = processTx(bmapTx)
+	fmt.Printf("%sProcessing mempool tx %s%s\n", chalk.Cyan, bmapTx.Tx.Tx.H, chalk.Reset)
+	path, bsonData, err := processTx(bmapTx)
 	if err != nil {
 		return "", bmapTx.Blk.I, err
 	}
+
+	// convert to bytes
+	bsonBytes, err := bson.Marshal(bsonData)
+	if err != nil {
+		return "", bmapTx.Blk.I, err
+	}
+	p2p.ProcessLine(bsonBytes, fmt.Sprintf("%d", bmapTx.Blk.I))
 
 	return path, bmapTx.Blk.I, nil
 }
@@ -225,7 +237,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 
 	ingest(filename)
 	state.SaveProgress(height)
-	if config.DeleteAfterIngest {
+	if config.DeleteAfterIngest && !config.EnableP2P {
 		fmt.Printf("%sDeleting file in crawler %s%s\n", chalk.Cyan, filename, chalk.Reset)
 		err := os.Remove(filename)
 		if err != nil {
@@ -241,8 +253,26 @@ func processBlockDoneEvent(height uint32, count uint32) {
 	}
 }
 
-func processTx(bmapData *bmap.Tx) (path string, err error) {
+func processTx(bmapData *bmap.Tx) (path string, bsonData bson.M, err error) {
 
+	bsonData, err = PrepareForIngestion(bmapData)
+	if err != nil {
+		log.Printf("[ERROR]: %v", err)
+		return "", nil, err
+	}
+
+	path = fmt.Sprintf("data/%d.json", bmapData.Blk.I)
+	// 	Write to local filesystem
+	err = persist.SaveLine(path, bsonData)
+	if err != nil {
+		log.Printf("[WRITE ERROR]: %v", err)
+		return "", nil, err
+	}
+
+	return path, bsonData, err
+}
+
+func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
 	// delete input.Tape from the inputs and outputs
 	for i := range bmapData.Tx.In {
 		bmapData.Tx.In[i].Tape = nil
@@ -252,7 +282,7 @@ func processTx(bmapData *bmap.Tx) (path string, err error) {
 		bmapData.Tx.Out[i].Tape = nil
 	}
 
-	bsonData := bson.M{
+	bsonData = bson.M{
 		"_id": bmapData.Tx.Tx.H,
 		"tx":  bmapData.Tx.Tx,
 		"blk": bmapData.Tx.Blk,
@@ -315,6 +345,7 @@ func processTx(bmapData *bmap.Tx) (path string, err error) {
 	}
 
 	bsonData["MAP"] = bmapData.MAP
+
 	if collection, ok := bmapData.MAP[0]["type"].(string); ok {
 		bsonData["collection"] = collection
 	} else {
@@ -335,13 +366,5 @@ func processTx(bmapData *bmap.Tx) (path string, err error) {
 		}
 	}
 
-	path = fmt.Sprintf("data/%d.json", bmapData.Blk.I)
-	// 	Write to local filesystem
-	err = persist.SaveLine(path, bsonData)
-	if err != nil {
-		log.Printf("[WRITE ERROR]: %v", err)
-		return "", err
-	}
-
-	return path, err
+	return
 }

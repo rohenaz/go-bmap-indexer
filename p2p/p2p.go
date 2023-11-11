@@ -385,20 +385,23 @@ func importFile(file string, height string) {
 	// wait for the workers to finish
 	wg.Wait()
 
-	// delete the json file ONLY IF it is not the "highest" file
-	// convert height to uint32
+	if config.DeleteAfterIngest {
 
-	heightNum, err := strconv.ParseUint(height, 10, 32)
-	if err != nil {
-		log.Fatal(err)
-	}
+		// delete the json file ONLY IF it is not the "highest" file
+		// convert height to uint32
 
-	if uint32(heightNum) <= ReadyBlock {
-		fmt.Printf("%sDeleting file in p2p worker %s%s\n", p2pChalk, height+".json", chalk.Reset)
-
-		err := os.Remove("./data/" + height + ".json")
+		heightNum, err := strconv.ParseUint(height, 10, 32)
 		if err != nil {
-			fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error deleting file", height+".json", err, chalk.Reset)
+			log.Fatal(err)
+		}
+
+		if uint32(heightNum) <= ReadyBlock {
+			fmt.Printf("%sDeleting file in p2p worker %s%s\n", p2pChalk, height+".json", chalk.Reset)
+
+			err := os.Remove("./data/" + height + ".json")
+			if err != nil {
+				fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error deleting file", height+".json", err, chalk.Reset)
+			}
 		}
 	}
 }
@@ -464,7 +467,7 @@ func ProcessLine(line []byte, height string) (txid *string, cid *cid.Cid, err er
 	if err != nil {
 		return nil, nil, err
 	}
-
+	fmt.Println("Cache recorded: ", cid.String())
 	return txid, cid, nil
 }
 
