@@ -72,7 +72,7 @@ func ProcessDone() {
 			if txCount > 0 {
 				processBlockDoneEvent(height, txCount)
 				if config.EnableP2P {
-					p2p.CreateContentCache()
+					// p2p.CreateContentCache()
 				}
 			}
 			break
