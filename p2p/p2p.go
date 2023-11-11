@@ -58,6 +58,15 @@ type LineData struct {
 
 var p2pChalk = chalk.Cyan.NewStyle().WithBackground(chalk.Magenta)
 
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file loaded")
+		if os.Getenv("ENVIROMENT") == "development" {
+			log.Fatal(err)
+		}
+	}
+}
 func readData(rw *bufio.ReadWriter) {
 	for {
 		str, err := rw.ReadString('\n')
@@ -117,14 +126,6 @@ func handleStream(stream network.Stream) {
 // Start initializes the P2P node and connects it to the network
 func Start() {
 	ctx := context.Background()
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file loaded")
-		if os.Getenv("ENVIROMENT") == "development" {
-			log.Fatal(err)
-		}
-	}
 
 	privKey, err := getPrivateKeyFromEnv("BMAP_P2P_PK")
 	if err != nil {

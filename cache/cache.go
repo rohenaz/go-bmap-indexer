@@ -27,8 +27,9 @@ func onRedisConnect(ctx context.Context, cn *redis.Conn) error {
 }
 
 func Connect() {
+
 	rdb = redis.NewClient(&redis.Options{
-		Addr:      os.Getenv("REDIS_PRIVATE_URL"),
+		Addr:      os.Getenv("REDIS_PRIVATE_URL")[8:], // remove redis://
 		OnConnect: onRedisConnect,
 	})
 	fmt.Printf("%sConnecting to Redis cache%s\n", cacheChalk, chalk.Reset)
