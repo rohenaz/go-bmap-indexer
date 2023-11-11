@@ -32,7 +32,7 @@ func Connect() {
 	opts, err := redis.ParseURL(url)
 	if err != nil {
 		panic(err)
-	})
+	}
 
 	opts.OnConnect = onRedisConnect
 	rdb = redis.NewClient(opts)
