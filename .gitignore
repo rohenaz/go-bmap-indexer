@@ -1,5 +1,4 @@
 .DS_Store
-block.tmp
 data/*
 data.zip
 .env

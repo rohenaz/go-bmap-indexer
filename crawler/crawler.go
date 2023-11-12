@@ -255,7 +255,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 
 func processTx(bmapData *bmap.Tx) (path string, bsonData bson.M, err error) {
 
-	bsonData, err = PrepareForIngestion(bmapData)
+	bsonData, err = PrepareForIngestion(bmapData, bmapData.MAP[0]["type"].(string))
 	if err != nil {
 		log.Printf("[ERROR]: %v", err)
 		return "", nil, err
@@ -287,15 +287,14 @@ func PrepareForIngestion(bmapData *bmap.Tx, collection string) (bsonData bson.M,
 		"_id": bmapData.Tx.Tx.H,
 		"tx":  bmapData.Tx.Tx,
 		"blk": bmapData.Tx.Blk,
-		// go equivalent of Math.round(new Date().getTime() / 1000)
-		// "timestamp": time.Now().Unix(),
 		"in":  bmapData.Tx.In,
 		"out": bmapData.Tx.Out,
 	}
 
+	// timestamp is a "first seen" value
 	// if this was set from a new block coming in we dont set the timestamp
-
 	if bmapData.Blk.T == 0 {
+		// go equivalent of Math.round(new Date().getTime() / 1000)
 		bsonData["timestamp"] = time.Now().Unix()
 	}
 
