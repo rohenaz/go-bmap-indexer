@@ -255,7 +255,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 
 func processTx(bmapData *bmap.Tx) (path string, bsonData bson.M, err error) {
 
-	bsonData, err = PrepareForIngestion(bmapData, bmapData.MAP[0]["type"].(string))
+	bsonData, err = PrepareForIngestion(bmapData)
 	if err != nil {
 		log.Printf("[ERROR]: %v", err)
 		return "", nil, err
@@ -272,7 +272,7 @@ func processTx(bmapData *bmap.Tx) (path string, bsonData bson.M, err error) {
 	return path, bsonData, err
 }
 
-func PrepareForIngestion(bmapData *bmap.Tx, collection string) (bsonData bson.M, err error) {
+func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
 
 	// delete input.Tape from the inputs and outputs
 	for i := range bmapData.Tx.In {
