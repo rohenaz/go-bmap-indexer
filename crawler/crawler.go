@@ -272,7 +272,8 @@ func processTx(bmapData *bmap.Tx) (path string, bsonData bson.M, err error) {
 	return path, bsonData, err
 }
 
-func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
+func PrepareForIngestion(bmapData *bmap.Tx, collection string) (bsonData bson.M, err error) {
+
 	// delete input.Tape from the inputs and outputs
 	for i := range bmapData.Tx.In {
 		bmapData.Tx.In[i].Tape = nil
@@ -287,9 +288,15 @@ func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
 		"tx":  bmapData.Tx.Tx,
 		"blk": bmapData.Tx.Blk,
 		// go equivalent of Math.round(new Date().getTime() / 1000)
-		"timestamp": time.Now().Unix(),
-		"in":        bmapData.Tx.In,
-		"out":       bmapData.Tx.Out,
+		// "timestamp": time.Now().Unix(),
+		"in":  bmapData.Tx.In,
+		"out": bmapData.Tx.Out,
+	}
+
+	// if this was set from a new block coming in we dont set the timestamp
+
+	if bmapData.Blk.T == 0 {
+		bsonData["timestamp"] = time.Now().Unix()
 	}
 
 	if bmapData.AIP != nil {
