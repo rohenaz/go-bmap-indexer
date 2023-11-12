@@ -302,6 +302,10 @@ func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
 		bsonData["AIP"] = bmapData.AIP
 	}
 
+	if bmapData.AIP != nil {
+		bsonData["SIGMA"] = bmapData.Sigma
+	}
+
 	if bmapData.BAP != nil {
 		bsonData["BAP"] = bmapData.BAP
 	}
