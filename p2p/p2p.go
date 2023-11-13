@@ -317,7 +317,7 @@ func discoverPeers(ctx context.Context, h host.Host, topicName *string) {
 			}
 		}
 	}
-	fmt.Println("Peer discovery complete")
+	fmt.Println("Peer discovery complete. Peers found:", len(kademliaDHT.RoutingTable().ListPeers()))
 }
 
 // CreateContentCache will import the jsonld files in the data folder and create individual cbor encoded files for every line (parsed bmap tx)
