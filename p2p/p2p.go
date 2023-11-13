@@ -152,7 +152,7 @@ func Start() {
 		if err != nil {
 			panic(err)
 		}
-		go streamConsoleTo(ctx, topic)
+		// go streamConsoleTo(ctx, topic)
 
 		sub, err := topic.Subscribe()
 		if err != nil {
@@ -542,7 +542,7 @@ func streamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		s, err := reader.ReadString('\n')
-		if err != nil {
+		if err != nil && err.Error() != "EOF" {
 			panic(err)
 		}
 		if err := topic.Publish(ctx, []byte(s)); err != nil {
