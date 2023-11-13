@@ -104,7 +104,12 @@ func saveToMongo(bsonData *bson.M) (err error) {
 	// goroutine 33 [running]:
 	// github.com/rohenaz/go-bmap-indexer/crawler.saveToMongo(0xc000560088)
 	//         /Users/satchmo/code/go-bmap-indexer/crawler/worker.go:99 +0x165
-	collectionName := (*bsonData)["collection"].(string)
+
+	var collectionName string
+	var ok bool
+	if collectionName, ok = (*bsonData)["collection"].(string); !ok {
+		return
+	}
 	delete(*bsonData, "collection")
 
 	filter := bson.M{"_id": (*bsonData)["_id"]}
