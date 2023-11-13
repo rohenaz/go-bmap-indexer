@@ -318,8 +318,8 @@ func discoverPeers(ctx context.Context, h host.Host, topicName *string) {
 // CreateContentCache will import the jsonld files in the data folder and create individual cbor encoded files for every line (parsed bmap tx)
 func CreateContentCache() {
 	// mutex prevents race conditions
-	mu.Lock()
-	defer mu.Unlock()
+	// mu.Lock()
+	// defer mu.Unlock()
 
 	Started = true
 	cache.Connect()
