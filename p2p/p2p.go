@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fxamacker/cbor"
 	"github.com/ipfs/go-cid"
@@ -159,6 +160,10 @@ func Start() {
 			fmt.Printf("%s%s %s: %v%s\n", p2pChalk, "Error subscribing to topic", topic, err, chalk.Reset)
 		}
 		printMessagesFrom(ctx, sub)
+		go func(topic *pubsub.Topic, topicName string) {
+			time.Sleep(5 * time.Second)
+			topic.Publish(ctx, []byte("Hello "+topicName))
+		}(topic, topicName)
 	}
 
 	// define protocol
