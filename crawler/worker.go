@@ -83,7 +83,7 @@ func ingest(filepath string) {
 		}
 		if (existing == nil || existing.Timestamp == 0) && bsonData["timestamp"] == nil {
 			// use the block time if theres no timestamp
-			bsonData["timestamp"] = bsonData["blk"].(map[string]interface{})["t"].(int64)
+			bsonData["timestamp"] = bsonData["blk"].(map[string]interface{})["t"].(float64)
 		}
 
 		limiter <- struct{}{}
