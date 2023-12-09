@@ -66,11 +66,15 @@ func ingest(filepath string) {
 
 		// 2.1 - get the collection name
 		// panic: interface conversion: interface {} is []interface {}, not primitive.M
+		// TODO: This only works if the metadata is in output idx 0
 		collectionName, ok := bsonData["MAP"].([]interface{})[0].(map[string]interface{})["type"].(string)
+
 		if !ok {
 			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, "Could not get collection name", chalk.Reset)
 			continue
 		}
+
+		log.Println("ingesting to collectionName", collectionName)
 		// 2.5 find existing record in the db
 		existing, err := GetExistingDoc(collectionName, bsonData["_id"].(string))
 		if err != nil {
