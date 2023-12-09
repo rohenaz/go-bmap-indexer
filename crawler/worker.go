@@ -70,7 +70,7 @@ func ingest(filepath string) {
 		collectionName, ok := bsonData["MAP"].([]interface{})[0].(map[string]interface{})["type"].(string)
 
 		if !ok {
-			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, "Could not get collection name", chalk.Reset)
+			log.Printf("%s[Error]: %s%s\n", chalk.Cyan, "Could not get collection name", chalk.Reset)
 			continue
 		}
 
@@ -78,8 +78,7 @@ func ingest(filepath string) {
 		// 2.5 find existing record in the db
 		existing, err := GetExistingDoc(collectionName, bsonData["_id"].(string))
 		if err != nil {
-			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
-			continue
+			log.Printf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
 		}
 		if (existing == nil || existing.Timestamp == 0) && bsonData["timestamp"] == nil {
 			// use the block time if theres no timestamp

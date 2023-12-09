@@ -15,6 +15,7 @@ import (
 	"github.com/bitcoinschema/go-bmap"
 	"github.com/libsv/go-bt/v2"
 	"github.com/rohenaz/go-bmap-indexer/config"
+	"github.com/rohenaz/go-bmap-indexer/database"
 	"github.com/rohenaz/go-bmap-indexer/p2p"
 	"github.com/rohenaz/go-bmap-indexer/persist"
 	"github.com/rohenaz/go-bmap-indexer/state"
@@ -191,8 +192,17 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 		bmapTx.Blk.T = blockTime
 
 		// log.Printf("[BMAP]: %d: %s | Data Length: %d | First 10 bytes: %x", tx.BlockHeight, bmapTx.Tx.Tx.H, len(tx.Transaction), tx.Transaction[:10])
+		// indexerTx := database.IndexerTx{
+		// 	*bmapTx,
+		// 	0,
+		// }
+		// that doesnt work
+		indexerTx := &database.IndexerTx{
+			Tx:        *bmapTx,
+			Timestamp: 0,
+		}
 
-		_, _, _ = processTx(bmapTx)
+		_, _, _ = processTx(indexerTx)
 		// if err != nil {
 		// 	log.Printf("[ERROR]: %v", err)
 		// 	return
@@ -210,7 +220,13 @@ func processMempoolEvent(rawtx []byte) (path string, height uint32, err error) {
 		return "", bmapTx.Blk.I, err
 	}
 	fmt.Printf("%sProcessing mempool tx %s%s\n", chalk.Cyan, bmapTx.Tx.Tx.H, chalk.Reset)
-	path, _, err = processTx(bmapTx)
+
+	indexerTx := &database.IndexerTx{
+		Tx:        *bmapTx,
+		Timestamp: time.Now().Unix(),
+	}
+
+	path, _, err = processTx(indexerTx)
 	if err != nil {
 		return "", bmapTx.Blk.I, err
 	}
@@ -253,7 +269,7 @@ func processBlockDoneEvent(height uint32, count uint32) {
 	}
 }
 
-func processTx(bmapData *bmap.Tx) (path string, bsonData bson.M, err error) {
+func processTx(bmapData *database.IndexerTx) (path string, bsonData bson.M, err error) {
 
 	bsonData, err = PrepareForIngestion(bmapData)
 	if err != nil {
@@ -272,7 +288,7 @@ func processTx(bmapData *bmap.Tx) (path string, bsonData bson.M, err error) {
 	return path, bsonData, err
 }
 
-func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
+func PrepareForIngestion(bmapData *database.IndexerTx) (bsonData bson.M, err error) {
 
 	// delete input.Tape from the inputs and outputs
 	for i := range bmapData.Tx.In {
@@ -284,8 +300,8 @@ func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
 	}
 
 	bsonData = bson.M{
-		"_id": bmapData.Tx.Tx.H,
-		"tx":  bmapData.Tx.Tx,
+		"_id": bmapData.Tx.Tx.Tx.H,
+		"tx":  bmapData.Tx.Tx.Tx,
 		"blk": bmapData.Tx.Blk,
 		"in":  bmapData.Tx.In,
 		"out": bmapData.Tx.Out,
