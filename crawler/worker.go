@@ -81,10 +81,11 @@ func ingest(filepath string) {
 			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
 			continue
 		}
-		if existing != nil && existing.Timestamp == 0 {
-			// update the timestamp
-			bsonData["timestamp"] = existing.Timestamp
+		if (existing == nil || existing.Timestamp == 0) && bsonData["timestamp"] == nil {
+			// use the block time if theres no timestamp
+			bsonData["timestamp"] = bsonData["blk"].(map[string]interface{})["t"].(int64)
 		}
+
 		limiter <- struct{}{}
 		wg.Add(1)
 		go func(bsonData *bson.M) {
