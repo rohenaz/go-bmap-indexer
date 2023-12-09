@@ -291,13 +291,6 @@ func PrepareForIngestion(bmapData *bmap.Tx) (bsonData bson.M, err error) {
 		"out": bmapData.Tx.Out,
 	}
 
-	// timestamp is a "first seen" value
-	// if this was set from a new block coming in we dont set the timestamp
-	if bmapData.Blk.T == 0 {
-		// go equivalent of Math.round(new Date().getTime() / 1000)
-		bsonData["timestamp"] = time.Now().Unix()
-	}
-
 	if bmapData.AIP != nil {
 		bsonData["AIP"] = bmapData.AIP
 	}

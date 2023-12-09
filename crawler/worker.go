@@ -64,6 +64,23 @@ func ingest(filepath string) {
 			continue
 		}
 
+		// 2.1 - get the collection name
+		// panic: interface conversion: interface {} is []interface {}, not primitive.M
+		collectionName, ok := bsonData["MAP"].([]interface{})[0].(map[string]interface{})["type"].(string)
+		if !ok {
+			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, "Could not get collection name", chalk.Reset)
+			continue
+		}
+		// 2.5 find existing record in the db
+		existing, err := GetExistingDoc(collectionName, bsonData["_id"].(string))
+		if err != nil {
+			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
+			continue
+		}
+		if existing != nil && existing.Timestamp == 0 {
+			// update the timestamp
+			bsonData["timestamp"] = existing.Timestamp
+		}
 		limiter <- struct{}{}
 		wg.Add(1)
 		go func(bsonData *bson.M) {
@@ -86,6 +103,21 @@ func ingest(filepath string) {
 		fmt.Printf("%sError reading file %s: %v%s\n", chalk.Cyan, filepath, err, chalk.Reset)
 		return
 	}
+}
+
+// GetExistingDoc returns a document from the txs collection
+func GetExistingDoc(collectionName string, txid string) (*database.IndexerTx, error) {
+	conn := database.GetConnection()
+	filter := bson.M{"_id": txid}
+
+	bmapTx, err := conn.GetDocs(collectionName, 1, 0, filter)
+	if err != nil {
+		return nil, err
+	}
+	if len(bmapTx) == 0 {
+		return nil, nil
+	}
+	return &bmapTx[0], nil
 }
 
 func saveToMongo(bsonData *bson.M) (err error) {
