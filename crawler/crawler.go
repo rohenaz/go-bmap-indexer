@@ -143,10 +143,6 @@ func Crawl(height int) (newHeight int) {
 	var subscription *junglebus.Subscription
 	if subscription, err = junglebusClient.Subscribe(context.Background(), subscriptionID, fromBlock, eventHandler); err != nil {
 		log.Printf("ERROR: failed getting subscription %s", err.Error())
-	}
-
-	if err != nil {
-		log.Printf("ERROR: failed getting subscription %s", err.Error())
 		unsubscribeError := subscription.Unsubscribe()
 
 		if err = subscription.Unsubscribe(); unsubscribeError != nil {
