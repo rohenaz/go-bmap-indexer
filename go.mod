@@ -1,8 +1,8 @@
 module github.com/rohenaz/go-bmap-indexer
 
-go 1.22	
+go 1.21
 
-toolchain go1.22.5
+toolchain go1.21.3
 
 require (
 	github.com/GorillaPool/go-junglebus v0.2.13
