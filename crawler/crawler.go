@@ -12,8 +12,8 @@ import (
 
 	"github.com/GorillaPool/go-junglebus"
 	"github.com/GorillaPool/go-junglebus/models"
+	"github.com/bitcoin-sv/go-sdk/transaction"
 	"github.com/bitcoinschema/go-bmap"
-	"github.com/libsv/go-bt/v2"
 	"github.com/rohenaz/go-bmap-indexer/config"
 	"github.com/rohenaz/go-bmap-indexer/database"
 	"github.com/rohenaz/go-bmap-indexer/p2p"
@@ -173,7 +173,7 @@ func CancelCrawl(newBlockHeight int) {
 func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32) {
 	if len(rawtx) > 0 {
 		// log.Printf("[TX]: %d: %s | Data Length: %d", blockHeight, tx.Id, len(tx.Transaction))
-		t, err := bt.NewTxFromBytes(rawtx)
+		t, err := transaction.NewTransactionFromBytes(rawtx)
 		if err != nil {
 			log.Printf("[ERROR]: %v", err)
 			return
@@ -207,7 +207,7 @@ func processTransactionEvent(rawtx []byte, blockHeight uint32, blockTime uint32)
 }
 
 func processMempoolEvent(rawtx []byte) (path string, height uint32, err error) {
-	t, err := bt.NewTxFromBytes(rawtx)
+	t, err := transaction.NewTransactionFromBytes(rawtx)
 	if err != nil {
 		return "", 0, err
 	}
