@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	ec "github.com/bitcoin-sv/go-sdk/primitives/ec"
 	"github.com/fxamacker/cbor"
 	"github.com/ipfs/go-cid"
 	"github.com/joho/godotenv"
@@ -26,7 +27,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
-	"github.com/libsv/go-bk/wif"
 	ma "github.com/multiformats/go-multiaddr"
 	mc "github.com/multiformats/go-multicodec"
 	mh "github.com/multiformats/go-multihash"
@@ -483,12 +483,12 @@ func getPrivateKeyFromEnv(envVar string) (crypto.PrivKey, error) {
 		return nil, fmt.Errorf("%s environment variable is not set", envVar)
 	}
 
-	decodedWIF, err := wif.DecodeWIF(wifStr)
+	pk, err := ec.PrivateKeyFromWif(wifStr)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding WIF: %s", err)
 	}
 
-	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(decodedWIF.PrivKey.Serialise())
+	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(pk.Serialize())
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling private key: %s", err)
 	}
