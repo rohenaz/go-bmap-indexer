@@ -332,15 +332,19 @@ func PrepareForIngestion(bmapData *database.IndexerTx) (bsonData bson.M, err err
 	if bmapData.B != nil {
 		for _, b := range bmapData.B {
 			// remove the data if its not a message
-			b.Data.Bytes = []byte{}
+			var removeData = true
 			// only if this is a bitcoinschema type, do we keep the data
 			// TODO: Allow user to select the types they want to index fully
 			if len(bmapData.MAP) > 0 && bmapData.MAP[0]["type"] != nil {
-				if !slices.Contains(strings.Split(config.OutputTypes, ","), fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
-					b.Data.UTF8 = ""
+				if slices.Contains(strings.Split(config.OutputTypes, ","), fmt.Sprintf("%v", bmapData.MAP[0]["type"])) {
+					removeData = false
 				}
-			} else {
+			}
+			if removeData {
+				b.Data.Bytes = nil
 				b.Data.UTF8 = ""
+			} else if b.Data.UTF8 != "" {
+				b.Data.Bytes = nil
 			}
 			if len(b.MediaType) > 255 {
 				b.MediaType = b.MediaType[:255]
