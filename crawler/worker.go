@@ -71,9 +71,6 @@ func ingest(filepath string) {
 				wg.Done()
 			}()
 			saveTransaction(*bsonData)
-			if err != nil {
-				log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
-			}
 		}(&bsonData)
 	}
 
@@ -94,6 +91,7 @@ func saveTransaction(bsonData bson.M) {
 
 	if !ok {
 		log.Printf("%s[Error]: %s%s\n", chalk.Cyan, "Could not get collection name", chalk.Reset)
+		return
 	}
 
 	log.Println("ingesting to collectionName", collectionName)
