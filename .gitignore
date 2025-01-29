@@ -3,3 +3,4 @@ data/*
 data.zip
 !data/.ph
 .env
+.bitcoin
