@@ -61,28 +61,6 @@ func ingest(filepath string) {
 		err := json.Unmarshal(byteLine, &bsonData)
 		if err != nil {
 			log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
-			continue
-		}
-
-		// 2.1 - get the collection name
-		// panic: interface conversion: interface {} is []interface {}, not primitive.M
-		// TODO: This only works if the metadata is in output idx 0
-		collectionName, ok := bsonData["MAP"].([]interface{})[0].(map[string]interface{})["type"].(string)
-
-		if !ok {
-			log.Printf("%s[Error]: %s%s\n", chalk.Cyan, "Could not get collection name", chalk.Reset)
-			continue
-		}
-
-		log.Println("ingesting to collectionName", collectionName)
-		// 2.5 find existing record in the db
-		existing, err := GetExistingDoc(collectionName, bsonData["_id"].(string))
-		if err != nil {
-			log.Printf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
-		}
-		if (existing == nil || existing.Timestamp == 0) && bsonData["timestamp"] == nil {
-			// use the block time if theres no timestamp
-			bsonData["timestamp"] = bsonData["blk"].(map[string]interface{})["t"].(float64)
 		}
 
 		limiter <- struct{}{}
@@ -92,11 +70,7 @@ func ingest(filepath string) {
 				<-limiter
 				wg.Done()
 			}()
-			// 3 - insert into mongo
-			err = saveToMongo(bsonData)
-			if err != nil {
-				log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
-			}
+			saveTransaction(*bsonData)
 		}(&bsonData)
 	}
 
@@ -106,6 +80,35 @@ func ingest(filepath string) {
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("%sError reading file %s: %v%s\n", chalk.Cyan, filepath, err, chalk.Reset)
 		return
+	}
+}
+
+func saveTransaction(bsonData bson.M) {
+	// 2.1 - get the collection name
+	// panic: interface conversion: interface {} is []interface {}, not primitive.M
+	// TODO: This only works if the metadata is in output idx 0
+	collectionName, ok := bsonData["MAP"].([]interface{})[0].(map[string]interface{})["type"].(string)
+
+	if !ok {
+		log.Printf("%s[Error]: %s%s\n", chalk.Cyan, "Could not get collection name", chalk.Reset)
+		return
+	}
+
+	log.Println("ingesting to collectionName", collectionName)
+	// 2.5 find existing record in the db
+	existing, err := GetExistingDoc(collectionName, bsonData["_id"].(string))
+	if err != nil {
+		log.Printf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
+	}
+	if (existing == nil || existing.Timestamp == 0) && bsonData["timestamp"] == nil && bsonData["blk"] != nil {
+		// use the block time if theres no timestamp
+		bsonData["timestamp"] = bsonData["blk"].(map[string]interface{})["t"].(float64)
+	}
+
+	// 3 - insert into mongo
+	err = saveToMongo(&bsonData)
+	if err != nil {
+		log.Panicf("%s[Error]: %s%s\n", chalk.Cyan, err, chalk.Reset)
 	}
 }
 

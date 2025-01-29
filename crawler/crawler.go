@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"strings"
@@ -217,22 +218,27 @@ func processMempoolEvent(rawtx []byte) (path string, height uint32, err error) {
 	}
 	fmt.Printf("%sProcessing mempool tx %s%s\n", chalk.Cyan, bmapTx.Tx.Tx.H, chalk.Reset)
 
-	indexerTx := &database.IndexerTx{
+	bsonData, err := PrepareForIngestion(&database.IndexerTx{
 		Tx:        *bmapTx,
 		Timestamp: time.Now().Unix(),
-	}
-
-	path, _, err = processTx(indexerTx)
+	})
 	if err != nil {
-		return "", bmapTx.Blk.I, err
+		return
+	}
+	// bsonData in a block gets saved as json to a file and re-read
+	// In that process some things get changed a bit
+	// Json marshall/unmarshall ensures the data matches the data processed in blocks
+	bsonDataJson, err := json.Marshal(bsonData)
+	if err != nil {
+		return
+	}
+	var bsonDataNew bson.M
+	err = json.Unmarshal(bsonDataJson, &bsonDataNew)
+	if err != nil {
+		return
 	}
 
-	// convert to bytes
-	// bsonBytes, err := bson.Marshal(bsonData)
-	// if err != nil {
-	// 	return "", bmapTx.Blk.I, err
-	// }
-	// p2p.ProcessLine(bsonBytes, fmt.Sprintf("%d", bmapTx.Blk.I))
+	saveTransaction(bsonDataNew)
 
 	return path, bmapTx.Blk.I, nil
 }
