@@ -7,7 +7,7 @@ toolchain go1.23.2
 require (
 	github.com/GorillaPool/go-junglebus v0.2.14
 	github.com/bitcoin-sv/go-sdk v1.1.18
-	github.com/bitcoinschema/go-bmap v0.2.0
+	github.com/bitcoinschema/go-bmap v0.2.2
 	github.com/ipfs/go-cid v0.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/libp2p/go-libp2p v0.38.2
@@ -24,7 +24,7 @@ require (
 require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bitcoinschema/go-sigma v0.1.0 // indirect
+	github.com/bitcoinschema/go-sigma v0.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
@@ -143,13 +143,13 @@ require (
 )
 
 require (
-	github.com/bitcoinschema/go-aip v0.3.0 // indirect
-	github.com/bitcoinschema/go-b v0.2.0 // indirect
-	github.com/bitcoinschema/go-bap v0.4.0 // indirect
-	github.com/bitcoinschema/go-bob v0.5.0 // indirect
-	github.com/bitcoinschema/go-boost v0.2.0 // indirect
-	github.com/bitcoinschema/go-bpu v0.2.0 // indirect
-	github.com/bitcoinschema/go-map v0.2.0 // indirect
+	github.com/bitcoinschema/go-aip v0.3.1 // indirect
+	github.com/bitcoinschema/go-b v0.2.1 // indirect
+	github.com/bitcoinschema/go-bap v0.4.1 // indirect
+	github.com/bitcoinschema/go-bob v0.5.1 // indirect
+	github.com/bitcoinschema/go-boost v0.2.1 // indirect
+	github.com/bitcoinschema/go-bpu v0.2.1 // indirect
+	github.com/bitcoinschema/go-map v0.2.1 // indirect
 	github.com/centrifugal/centrifuge-go v0.10.2 // indirect
 	github.com/centrifugal/protocol v0.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0
