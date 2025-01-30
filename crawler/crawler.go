@@ -122,7 +122,7 @@ func Crawl(height int) (newHeight int) {
 		OnStatus: func(status *models.ControlResponse) {
 			if status.Status == "error" {
 				log.Printf("[ERROR %d]: %v", status.StatusCode, status.Message)
-				eventChannel <- &Event{Type: "error", Error: fmt.Errorf(status.Message)}
+				eventChannel <- &Event{Type: "error", Error: fmt.Errorf("%d: %s", status.StatusCode, status.Message)}
 				return
 			} else {
 				eventChannel <- &Event{
